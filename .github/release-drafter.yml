@@ -47,9 +47,9 @@ categories:
       - "dependencies"
 
 template: |
-  [![Downloads for this release](https://img.shields.io/github/downloads/firstof9/openevse/$RESOLVED_VERSION/total.svg)](https://github.com/firstof9/openevse/releases/$RESOLVED_VERSION)
+  [![Downloads for this release](https://img.shields.io/github/downloads/firstof9/ha-renogy/$RESOLVED_VERSION/total.svg)](https://github.com/firstof9/ha-renogy/releases/$RESOLVED_VERSION)
 
   $CHANGES
 
   ## Links
-  - [Submit bugs/feature requests](https://github.com/firstof9/openevse/issues)
+  - [Submit bugs/feature requests](https://github.com/firstof9/ha-renogy/issues)
