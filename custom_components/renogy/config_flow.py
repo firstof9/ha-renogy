@@ -42,7 +42,7 @@ class OpenEVSEFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             )
             # Test connection
             try:
-                renogy.get_devices()
+                await renogy.get_devices()
             except NotAuthorized:
                 _LOGGER.exception("Invalid key(s).")
                 self._errors[CONF_SECRET_KEY] = "invalid_key"
@@ -80,7 +80,7 @@ class OpenEVSEFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None):
         """Add reconfigure step to allow to reconfigure a config entry."""
-        self._entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
+        self._entry = self._get_reconfigure_entry()
         assert self._entry
         self._data = dict(self._entry.data)
         self._errors = {}
@@ -92,7 +92,7 @@ class OpenEVSEFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             )
             # Test connection
             try:
-                renogy.get_devices()
+                await renogy.get_devices()
             except NotAuthorized:
                 _LOGGER.exception("Invalid key(s).")
                 self._errors[CONF_SECRET_KEY] = "invalid_key"
@@ -114,13 +114,11 @@ class OpenEVSEFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 self._errors[CONF_NAME] = "general"
 
             if not self._errors:
-                self.hass.config_entries.async_update_entry(
-                    self._entry, data=self._data
-                )
-                await self.hass.config_entries.async_reload(self._entry.entry_id)
                 _LOGGER.debug("%s reconfigured.", DOMAIN)
-                return self.async_abort(reason="reconfigure_successful")
-
+                return self.async_update_reload_and_abort(
+                    self._entry,
+                    data_updates=user_input,
+                )
         return await self._show_reconfig_form(user_input)
 
     async def _show_reconfig_form(self, user_input):
