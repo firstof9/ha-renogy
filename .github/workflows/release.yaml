@@ -21,7 +21,7 @@ jobs:
       - name: "Set version numbmer"
         run: |
           sed -i '/VERSION = /c\VERSION = "${{ steps.get_version.outputs.VERSION }}"' ${{ github.workspace }}/custom_components/renogy/const.py
-          sed -i '/version/c\  \"version\": \"${{ steps.get_version.outputs.VERSION }}\",' ${{ github.workspace }}/custom_components/renogy/manifest.json
+          sed -i '/version/c\  \"version\": \"${{ steps.get_version.outputs.VERSION }}\"' ${{ github.workspace }}/custom_components/renogy/manifest.json
       # Pack the ha-renogy dir as a zip and upload to the release
       - name: Create Zip File
         run: |
