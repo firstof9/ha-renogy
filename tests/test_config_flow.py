@@ -19,6 +19,7 @@ pytestmark = pytest.mark.asyncio
 _LOGGER = logging.getLogger(__name__)
 DEVICE_NAME = "Renogy Core"
 
+
 @pytest.mark.parametrize(
     "input,step_id,title,data",
     [
@@ -26,14 +27,14 @@ DEVICE_NAME = "Renogy Core"
             {
                 "name": DEVICE_NAME,
                 "secret_key": "SuperSecretKey",
-                "access_key": "SuperSpecialAccessKey"
+                "access_key": "SuperSpecialAccessKey",
             },
             "user",
             DEVICE_NAME,
             {
                 "name": DEVICE_NAME,
                 "secret_key": "SuperSecretKey",
-                "access_key": "SuperSpecialAccessKey"
+                "access_key": "SuperSpecialAccessKey",
             },
         ),
     ],
@@ -69,6 +70,7 @@ async def test_form_user(
         await hass.async_block_till_done()
         assert len(mock_setup_entry.mock_calls) == 1
 
+
 @pytest.mark.parametrize(
     "input,step_id,title,data",
     [
@@ -76,14 +78,14 @@ async def test_form_user(
             {
                 "name": DEVICE_NAME,
                 "secret_key": "SuperSecretKey",
-                "access_key": "SuperSpecialAccessKey"
+                "access_key": "SuperSpecialAccessKey",
             },
             "reconfigure",
             DEVICE_NAME,
             {
                 "name": DEVICE_NAME,
                 "secret_key": "SuperSecretKey",
-                "access_key": "SuperSpecialAccessKey"
+                "access_key": "SuperSpecialAccessKey",
             },
         ),
     ],
@@ -130,4 +132,4 @@ async def test_form_reconfigure(
         _LOGGER.debug("Entries: %s", len(hass.config_entries.async_entries(DOMAIN)))
         entry = hass.config_entries.async_entries(DOMAIN)[0]
         _LOGGER.debug("Entry: %s", entry.data)
-        assert entry.data.copy() == data    
+        assert entry.data.copy() == data
