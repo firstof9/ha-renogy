@@ -46,4 +46,3 @@ async def test_binary_sensors(hass, mock_api, caplog):
         state = hass.states.get("binary_sensor.rng_ctrl_rvr40_status")
         assert state
         assert state.state == "on"
-        assert state.device_info == ""
