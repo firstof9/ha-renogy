@@ -67,6 +67,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
         device,
     ) in coordinator.data.items():
         _LOGGER.debug("DEVICE: %s", device)
+        hub = ""
         if x == 0:
             if "serial" in device.keys() and device["serial"] != "":
                 hub = device["serial"]

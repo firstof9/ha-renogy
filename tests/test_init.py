@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAIN
 from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
+from homeassistant.helpers import device_registry as dr
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.renogy.const import DOMAIN
@@ -17,7 +18,7 @@ pytestmark = pytest.mark.asyncio
 DEVICE_NAME = "Renogy Core"
 
 
-async def test_setup_entry(hass, mock_api, caplog):
+async def test_setup_entry(hass, mock_api, device_registry: dr.DeviceRegistry, caplog):
     """Test setup_entry."""
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -31,7 +32,7 @@ async def test_setup_entry(hass, mock_api, caplog):
         await hass.async_block_till_done()
 
         assert len(hass.states.async_entity_ids(BINARY_SENSOR_DOMAIN)) == 5
-        assert len(hass.states.async_entity_ids(SENSOR_DOMAIN)) == 10
+        assert len(hass.states.async_entity_ids(SENSOR_DOMAIN)) == 22
         entries = hass.config_entries.async_entries(DOMAIN)
         assert len(entries) == 1
 
@@ -50,14 +51,14 @@ async def test_setup_and_unload_entry(hass, mock_api, caplog):
         await hass.async_block_till_done()
 
         assert len(hass.states.async_entity_ids(BINARY_SENSOR_DOMAIN)) == 5
-        assert len(hass.states.async_entity_ids(SENSOR_DOMAIN)) == 10
+        assert len(hass.states.async_entity_ids(SENSOR_DOMAIN)) == 22
         entries = hass.config_entries.async_entries(DOMAIN)
         assert len(entries) == 1
 
         assert await hass.config_entries.async_unload(entries[0].entry_id)
         await hass.async_block_till_done()
         assert len(hass.states.async_entity_ids(BINARY_SENSOR_DOMAIN)) == 5
-        assert len(hass.states.async_entity_ids(SENSOR_DOMAIN)) == 10
+        assert len(hass.states.async_entity_ids(SENSOR_DOMAIN)) == 22
         assert len(hass.states.async_entity_ids(DOMAIN)) == 0
 
         assert await hass.config_entries.async_remove(entries[0].entry_id)

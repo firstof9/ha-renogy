@@ -31,7 +31,7 @@ async def test_binary_sensors(hass, mock_api, caplog):
         await hass.async_block_till_done()
 
         assert len(hass.states.async_entity_ids(BINARY_SENSOR_DOMAIN)) == 5
-        assert len(hass.states.async_entity_ids(SENSOR_DOMAIN)) == 10
+        assert len(hass.states.async_entity_ids(SENSOR_DOMAIN)) == 22
         entries = hass.config_entries.async_entries(DOMAIN)
         assert len(entries) == 1
 
@@ -43,3 +43,8 @@ async def test_binary_sensors(hass, mock_api, caplog):
         state = hass.states.get("binary_sensor.rbt100lfp12sh_g1_heating_mode")
         assert state
         assert state.state == "off"
+        state = hass.states.get("binary_sensor.rng_ctrl_rvr40_status")
+        assert state
+        assert state.state == "on"   
+        assert state.device_info == ""     
+        

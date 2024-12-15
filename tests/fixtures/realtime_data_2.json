@@ -1,0 +1,20 @@
+{
+    "data": {
+        "auxiliaryBatteryTemperature": 2.0,
+        "totalKwhGenerated": 449358.03125,
+        "soc": 100,
+        "loadAmps": 0.0,
+        "solarWatts": 0.0,
+        "solarChargingVolts": 15.3,
+        "auxiliaryBatteryChargingWatts": null,
+        "loadWatts": 0,
+        "auxiliaryBatteryChargingVolts": 14.4,
+        "sku": "RNG-CTRL-RVR40",
+        "solarChargingAmps": 0.0,
+        "systemVolts": 12,
+        "loadVolts": 0.0,
+        "gridChargeAmps": 0.0,
+        "batteryType": 4,
+        "status": null
+    }
+}
