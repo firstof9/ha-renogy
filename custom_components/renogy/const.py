@@ -89,15 +89,15 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
     "presentCapacity": SensorEntityDescription(
         key="presentCapacity",
         name="Present Capacity",
-        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        device_class=SensorDeviceClass.ENERGY,
+        native_unit_of_measurement="Ah",
+        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
     "maximumCapacity": SensorEntityDescription(
         key="maximumCapacity",
         name="Maximum Capacity",
         native_unit_of_measurement="Ah",
-        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
     ),
     "presentAmps": SensorEntityDescription(
