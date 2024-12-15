@@ -29,17 +29,19 @@ async def async_setup_entry(hass, entry, async_add_devices):
         ) in BINARY_SENSORS:  # pylint: disable=consider-using-dict-items
             unique_id = device["serial"] or device_id
             temp_obj = RenogyBinarySensor(
-                    BINARY_SENSORS[binary_sensor],
-                    unique_id,
-                    device_id,
-                    coordinator,
-                    entry,
-                )            
-            if (binary_sensor in device.keys()):  # pylint: disable=consider-using-dict-items
+                BINARY_SENSORS[binary_sensor],
+                unique_id,
+                device_id,
+                coordinator,
+                entry,
+            )
+            if (
+                binary_sensor in device.keys()
+            ):  # pylint: disable=consider-using-dict-items
                 if temp_obj not in binary_sensors:
                     binary_sensors.append(temp_obj)
             if binary_sensor in device["data"].keys():
-                if temp_obj not in binary_sensors:                
+                if temp_obj not in binary_sensors:
                     binary_sensors.append(temp_obj)
 
     async_add_devices(binary_sensors, False)
