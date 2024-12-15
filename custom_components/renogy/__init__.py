@@ -60,19 +60,17 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     }
 
     device_registry = dr.async_get(hass)
-    x = 0
     hub = ""
     for (
-        device_id,  # pylint: disable=unused-variable
+        device_id,
         device,
     ) in coordinator.data.items():
         _LOGGER.debug("DEVICE: %s", device)
-        hub = ""
-        if x == 0:
+        if device["connection"] == "Hub":
             if "serial" in device.keys() and device["serial"] != "":
                 hub = device["serial"]
             else:
-                hub = device["deviceId"]
+                hub = device_id
             device_registry.async_get_or_create(
                 config_entry_id=config_entry.entry_id,
                 connections={(dr.CONNECTION_NETWORK_MAC, device["mac"])},
@@ -84,12 +82,11 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
                 model_id=device["model"],
                 sw_version=device["firmware"],
             )
-            x += 1
         else:
             if "serial" in device.keys() and device["serial"] != "":
                 serial = device["serial"]
             else:
-                serial = device["deviceId"]
+                serial = device_id
             device_registry.async_get_or_create(
                 config_entry_id=config_entry.entry_id,
                 connections={(dr.CONNECTION_NETWORK_MAC, device["mac"])},
@@ -106,6 +103,18 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 
     return True
+
+
+async def async_remove_config_entry_device(  # pylint: disable-next=unused-argument
+    hass: HomeAssistant, config_entry: ConfigEntry, device_entry: dr.DeviceEntry
+) -> bool:
+    """Remove config entry from a device if its no longer present."""
+    return not any(
+        identifier
+        for identifier in device_entry.identifiers
+        if identifier[0] == DOMAIN
+        and config_entry.runtime_data.get_device(identifier[1])
+    )
 
 
 async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
