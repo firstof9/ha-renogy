@@ -75,7 +75,7 @@ class RenogyBinarySensor(CoordinatorEntity, BinarySensorEntity):
     def device_info(self) -> dict:
         """Return a port description for device registry."""
         info = {
-            "connections": {(DOMAIN, self._unique_id)},
+            "identifiers": {(DOMAIN, self._unique_id)},
         }
 
         return info
