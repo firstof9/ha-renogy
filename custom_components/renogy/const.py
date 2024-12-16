@@ -59,7 +59,7 @@ BINARY_SENSORS: Final[dict[str, BinarySensorEntityDescription]] = {
         name="State",
         key="state",
         entity_category=EntityCategory.DIAGNOSTIC,
-    ),    
+    ),
 }
 
 SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
@@ -232,7 +232,7 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.TEMPERATURE,
-    ),    
+    ),
     "batteryVolts": SensorEntityDescription(
         key="batteryVolts",
         name="Battery Voltage",
@@ -241,7 +241,7 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLTAGE,
         suggested_display_precision=0,
-    ),    
+    ),
     "acOutputHz": SensorEntityDescription(
         key="acOutputHz",
         name="Output Frequency",
@@ -258,7 +258,7 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLTAGE,
         suggested_display_precision=0,
-    ),    
+    ),
     "outputAmps": SensorEntityDescription(
         key="outputAmps",
         name="Output Ampers",
@@ -267,7 +267,7 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.CURRENT,
         suggested_display_precision=1,
-    ),        
+    ),
     "ueiVolts": SensorEntityDescription(
         key="ueiVolts",
         name="UEI Voltage",
@@ -276,7 +276,7 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLTAGE,
         suggested_display_precision=0,
-    ), 
+    ),
     "chargePriority": SensorEntityDescription(
         key="chargePriority",
         name="Charge Priority",
@@ -298,7 +298,7 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         name="Battery Type",
         icon="mdi:car-battery",
         entity_category=EntityCategory.DIAGNOSTIC,
-    ),   
+    ),
     "batteryTemperature": SensorEntityDescription(
         key="batteryTemperature",
         name="Battery Temperature",
@@ -314,7 +314,7 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLTAGE,
         suggested_display_precision=1,
-    ),    
+    ),
     "batteryChargingVolts": SensorEntityDescription(
         key="batteryChargingVolts",
         name="Battery Charging Voltage",
@@ -323,7 +323,7 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLTAGE,
         suggested_display_precision=1,
-    ),    
+    ),
     "loadVolts": SensorEntityDescription(
         key="loadVolts",
         name="Load Voltage",
@@ -332,7 +332,7 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLTAGE,
         suggested_display_precision=1,
-    ),    
+    ),
     "solarAmps": SensorEntityDescription(
         key="solarAmps",
         name="Solar Ampers",
@@ -358,5 +358,5 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
         suggested_display_precision=2,
-    ),    
+    ),
 }
