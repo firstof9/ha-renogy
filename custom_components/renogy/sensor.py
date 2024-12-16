@@ -94,7 +94,7 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
         if data is None:
             self._state = None
         if self._type in data.keys():
-            if self._type == "output":
+            if self._type == "output" and "output" in data.keys():
                 value = OUTPUT_MODES[data[self._type]]
             else:
                 value = data[self._type]

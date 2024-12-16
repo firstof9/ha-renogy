@@ -289,7 +289,7 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         name="Output",
         icon="mdi:directions-fork",
         suggested_display_precision=0,
-        entity_category=EntityCategory.CONFIG,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     # End Inverter
     # Panels
