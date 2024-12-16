@@ -17,9 +17,9 @@ from .const import COORDINATOR, DOMAIN, SENSOR_TYPES
 _LOGGER = logging.getLogger(__name__)
 
 OUTPUT_MODES = {
-    "0": "Eco",
-    "1": "Normal",
-    "2": "Eco",
+    0: "Eco",
+    1: "Normal",
+    2: "Eco",
 }
 
 
@@ -94,7 +94,7 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
         if data is None:
             self._state = None
         if self._type in data.keys():
-            if self._type == "output" and "output" in data.keys():
+            if self._type == "output":
                 value = OUTPUT_MODES[data[self._type]]
             else:
                 value = data[self._type]
