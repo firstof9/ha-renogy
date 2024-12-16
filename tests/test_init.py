@@ -32,7 +32,7 @@ async def test_setup_entry(hass, mock_api, device_registry: dr.DeviceRegistry, c
         await hass.async_block_till_done()
 
         assert len(hass.states.async_entity_ids(BINARY_SENSOR_DOMAIN)) == 5
-        assert len(hass.states.async_entity_ids(SENSOR_DOMAIN)) == 22
+        assert len(hass.states.async_entity_ids(SENSOR_DOMAIN)) == 38
         entries = hass.config_entries.async_entries(DOMAIN)
         assert len(entries) == 1
 
@@ -51,14 +51,14 @@ async def test_setup_and_unload_entry(hass, mock_api, caplog):
         await hass.async_block_till_done()
 
         assert len(hass.states.async_entity_ids(BINARY_SENSOR_DOMAIN)) == 5
-        assert len(hass.states.async_entity_ids(SENSOR_DOMAIN)) == 22
+        assert len(hass.states.async_entity_ids(SENSOR_DOMAIN)) == 38
         entries = hass.config_entries.async_entries(DOMAIN)
         assert len(entries) == 1
 
         assert await hass.config_entries.async_unload(entries[0].entry_id)
         await hass.async_block_till_done()
         assert len(hass.states.async_entity_ids(BINARY_SENSOR_DOMAIN)) == 5
-        assert len(hass.states.async_entity_ids(SENSOR_DOMAIN)) == 22
+        assert len(hass.states.async_entity_ids(SENSOR_DOMAIN)) == 40
         assert len(hass.states.async_entity_ids(DOMAIN)) == 0
 
         assert await hass.config_entries.async_remove(entries[0].entry_id)
