@@ -16,6 +16,12 @@ from .const import COORDINATOR, DOMAIN, SENSOR_TYPES
 
 _LOGGER = logging.getLogger(__name__)
 
+OUTPUT_MODES = {
+    "0": "Eco",
+    "1": "Normal",
+    "2": "Eco",
+}
+
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up the OpenEVSE sensors."""
@@ -88,7 +94,10 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
         if data is None:
             self._state = None
         if self._type in data.keys():
-            value = data[self._type]
+            if self._type == "output":
+                value = OUTPUT_MODES[data[self._type]]
+            else:
+                value = data[self._type]
             self._state = value
         _LOGGER.debug("Sensor [%s] updated value: %s", self._type, self._state)
         return self._state
