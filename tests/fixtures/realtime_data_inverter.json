@@ -1,0 +1,23 @@
+{
+    "data": {
+        "auxiliaryBatteryTemperature": null,
+        "acOutputHz": 60.0,
+        "ueiVolts": null,
+        "outputVolts": 114.099998,
+        "loadAmps": null,
+        "solarWatts": null,
+        "chargePriority": null,
+        "output": 1,
+        "ueiAmps": null,
+        "loadWattsMode": null,
+        "loadActiveWatts": 42,
+        "solarChargingVolts": null,
+        "temperature": 22.0,
+        "loadWatts": null,
+        "outputAmps": 370.0,
+        "sku": "RINVTPGH110111S",
+        "solarChargingAmps": null,
+        "batteryType": null,
+        "batteryVolts": 12.6
+    }
+}

@@ -57,7 +57,7 @@ def mock_api(mock_aioclient):
     mock_aioclient.get(
         f"{BASE_URL}/device/data/latest/12345678901",
         status=200,
-        body="",
+        body=load_fixture("realtime_data_inverter.json"),
         repeat=True,
     )
     mock_aioclient.get(
