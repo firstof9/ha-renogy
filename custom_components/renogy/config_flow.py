@@ -104,7 +104,7 @@ class OpenEVSEFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 await renogy.get_devices()
             except NoDevices:
                 _LOGGER.exception("No devices found in API request.")
-                self._errors[CONF_ACCESS_KEY] = "no_devices"                
+                self._errors[CONF_ACCESS_KEY] = "no_devices"
             except NotAuthorized:
                 _LOGGER.exception("Invalid key(s).")
                 self._errors[CONF_SECRET_KEY] = "invalid_key"
