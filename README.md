@@ -27,7 +27,7 @@ You will require two keys to use this integration. The keys can be obtained at R
 
 https://platform.renogy.com/
 
-One you are logged in, click on your name at the top right, and click on "API Key". From here, click on "Create New Key". The first key that will be shown is your secret key or the key that starts with `sk`.  Copy paste this key because it only shows it once. Then, when you press ok, it shows you the second key or the access key or `ak` key. You can always go back and see the ak key but not the sk key. If you lose or forget the sk key, just delete it and make a new one.
+Once you are logged in, click on your name at the top right, and click on "API Key". From here, click on "Create New Key". The first key that will be shown is your secret key or the key that starts with `sk`.  Copy paste this key because it only shows it once. Then, when you press ok, it shows you the second key or the access key or `ak` key. You can always go back and see the ak key but not the sk key. If you lose or forget the sk key, just delete it and make a new one.
 
 You can make more than one set of keys, if you wish.
 
