@@ -9,7 +9,13 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.helpers import config_validation as cv
 from renogyapi import Renogy as api
-from renogyapi.exceptions import APIError, NotAuthorized, RateLimit, UrlNotFound
+from renogyapi.exceptions import (
+    APIError,
+    NoDevices,
+    NotAuthorized,
+    RateLimit,
+    UrlNotFound,
+)
 
 from .const import CONF_ACCESS_KEY, CONF_NAME, CONF_SECRET_KEY, DEFAULT_NAME, DOMAIN
 
@@ -43,6 +49,9 @@ class OpenEVSEFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             # Test connection
             try:
                 await renogy.get_devices()
+            except NoDevices:
+                _LOGGER.exception("No devices found in API request.")
+                self._errors[CONF_ACCESS_KEY] = "no_devices"
             except NotAuthorized:
                 _LOGGER.exception("Invalid key(s).")
                 self._errors[CONF_SECRET_KEY] = "invalid_key"

@@ -4,6 +4,7 @@
         "invalid_key": "One or both the keys are invalid. Please try again.",
         "rate_limit": "Rate limit exceeded, please try again in a few minutes.",
         "api_error": "An API error has occured. Please try again later.",
+        "no_devices": "The API returned no devices for your account.",
         "general": "An unknown error has occured, please check your Home Assistant log file for details."
       },
       "step": {
