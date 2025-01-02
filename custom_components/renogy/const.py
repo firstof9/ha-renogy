@@ -374,4 +374,13 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         native_unit_of_measurement=PERCENTAGE,
         suggested_display_precision=1,
     ),
+    "current": SensorEntityDescription(
+        key="current",
+        name="Ampers",
+        icon="mdi:sine-wave",
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.CURRENT,
+        suggested_display_precision=2,   
+    ), 
 }
