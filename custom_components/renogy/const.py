@@ -61,7 +61,7 @@ BINARY_SENSORS: Final[dict[str, BinarySensorEntityDescription]] = {
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     "alarm": BinarySensorEntityDescription(
-        name="Status",
+        name="Alarm",
         key="alarm",
         device_class=BinarySensorDeviceClass.DOOR,
     ),
