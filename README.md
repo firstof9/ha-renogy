@@ -30,7 +30,9 @@ Once you are logged in, click on your name at the top right, and click on "API K
 
 You can make more than one set of keys, if you wish.
 
-Please note that the email associated with your API account must be the same email that your hub is paired to. You can check this in the hub settings. Also, only devices that are paired to the hub will be exposed to the Renogy API (i.e.e devices that are connected to the DC Home App or older Renogy apps, will not be exposed to the API).
+Please note that the email associated with your API account must be the same email that your hub is paired to. You can check this in the hub settings. Also, only devices that are paired to the hub will be exposed to the Renogy API (i.e. devices that are connected to the DC Home App or older Renogy apps, will not be exposed to the API).
+
+Currently, the API does not support control of devices and can only read information. This will be added to the API in the future.
 
 ## Installation via HACS (recommended)
 
