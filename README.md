@@ -30,6 +30,8 @@ Once you are logged in, click on your name at the top right, and click on "API K
 
 You can make more than one set of keys, if you wish.
 
+Please note that the email associated with your API account must be the same email that your hub is paired to. You can check this in the hub settings. Also, only devices that are paired to the hub will be exposed to the Renogy API (i.e.e devices that are connected to the DC Home App or older Renogy apps, will not be exposed to the API).
+
 ## Installation via HACS (recommended)
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=firstof9&repository=ha-renogy&category=integration)
