@@ -7,6 +7,7 @@ import pytest
 from aioresponses import aioresponses
 
 from .common import load_fixture
+from .const import DUPE_SERIAL
 
 BASE_URL = "https://openapi.renogy.com"
 DEVICE_LIST = "/device/list"
@@ -107,3 +108,12 @@ def mock_api_no_devices(mock_aioclient):
         body=load_fixture("realtime_data.json"),
         repeat=True,
     )
+
+@pytest.fixture(name="mock_coordinator")
+def mock_coord():
+    """Mock charger data."""
+    with patch(
+        "custom_components.renogy.RenogyUpdateCoordinator._async_update_data"
+    ) as mock_value:
+        mock_value.return_value = DUPE_SERIAL
+        yield

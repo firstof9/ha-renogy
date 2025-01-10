@@ -65,3 +65,21 @@ async def test_setup_and_unload_entry(hass, mock_api, caplog):
         await hass.async_block_till_done()
         assert len(hass.states.async_entity_ids(BINARY_SENSOR_DOMAIN)) == 0
         assert len(hass.states.async_entity_ids(SENSOR_DOMAIN)) == 0
+
+async def test_duplicate_serials(hass, mock_api, mock_coordinator, device_registry: dr.DeviceRegistry, caplog):
+    """Test setup_entry."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title=DEVICE_NAME,
+        data=CONFIG_DATA,
+    )
+
+    with caplog.at_level(logging.DEBUG):
+        entry.add_to_hass(hass)
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        assert len(hass.states.async_entity_ids(BINARY_SENSOR_DOMAIN)) == 6
+        assert len(hass.states.async_entity_ids(SENSOR_DOMAIN)) == 19
+        entries = hass.config_entries.async_entries(DOMAIN)
+        assert len(entries) == 1

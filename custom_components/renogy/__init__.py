@@ -69,20 +69,16 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
         if "serial" in device.keys() and device["serial"] != "":
             serial = device["serial"]
         else:
-            serial = device_id
+            serial = None
 
-        device_check = device_registry.async_get_device(identifiers=(DOMAIN, serial))
-        if device_check is not None:
-            # Device already exists or duplicate serial number
-            # swap to device_id instead
-            serial = device_id
+        via = (DOMAIN, hub) if device_id != hub and hub else None
 
-        via = (DOMAIN, hub) if serial != hub and hub else None
+        _LOGGER.debug("Using device: %s via %s", device_id, via)
 
         device_registry.async_get_or_create(
             config_entry_id=config_entry.entry_id,
             connections={(dr.CONNECTION_NETWORK_MAC, device["mac"])},
-            identifiers={(DOMAIN, serial)},
+            identifiers={(DOMAIN, device_id)},
             serial_number=serial,
             name=device["name"],
             manufacturer="Renogy",
@@ -106,10 +102,9 @@ async def async_find_hub(coordinator) -> bool:
     ) in coordinator.data.items():
         _LOGGER.debug("Looking for hub device...")
         if device["connection"] == "Hub":
-            if "serial" in device.keys() and device["serial"] != "":
-                hub = device["serial"]
-            else:
-                hub = device_id
+            hub = device_id
+            _LOGGER.debug("Hub found: %s", hub)
+            break
 
     return hub
 

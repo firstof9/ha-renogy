@@ -98,3 +98,84 @@ DIAG_RESULTS = {
         "status": "online",
     },
 }
+
+DUPE_SERIAL = {
+    "230314043002434307": {
+      "deviceId": "230314043002434307",
+      "name": "Renogy ONE M1",
+      "mac": "",
+      "firmware": "V1.3.99",
+      "status": "online",
+      "connection": "Hub",
+      "serial": "23RMG3523812001099",
+      "model": "RMS-LP4-G2",
+      "data": {}
+    },
+    "250101091000725004": {
+      "deviceId": "250101091000725004",
+      "name": "Temp & RH Sensor",
+      "mac": "",
+      "firmware": "",
+      "status": "online",
+      "connection": "Zigbee",
+      "serial": "00124B0024CCDB0F",
+      "model": "TH01",
+      "data": {
+        "temperature": "10.8",
+        "humidity": "58",
+        "lowbattery": "57"
+      }
+    },
+    "230703112949819001": {
+      "deviceId": "230703112949819001",
+      "name": "RBT100LFP12S-G1",
+      "mac": "31",
+      "firmware": "",
+      "status": "online",
+      "connection": "Bluetooth",
+      "serial": "BT-TH-66EDEF65",
+      "model": "RBT100LFP12S-G1",
+      "data": {
+        "communicationMethod": None,
+        "presentCapacity": None,
+        "error": None,
+        "remainingTime": None,
+        "heatingModeStatus": None,
+        "temperature": "4.0",
+        "presentVolts": "13.50",
+        "cellVolts": None,
+        "maximumCapacity": "100.00",
+        "totalMaximumCapacity": "100.00",
+        "firmwareVersion": "0022",
+        "sku": None,
+        "batteryLevel": "99.66",
+        "presentAmps": "0.00"
+      }
+    },
+    "220327070523454002": {
+      "deviceId": "220327070523454002",
+      "name": "RBT100LFP12S-G1",
+      "mac": "30",
+      "firmware": "",
+      "status": "online",
+      "connection": "Bluetooth",
+      "serial": "BT-TH-66EDEF65",
+      "model": "RBT100LFP12S-G1",
+      "data": {
+        "communicationMethod": None,
+        "presentCapacity": None,
+        "error": None,
+        "remainingTime": None,
+        "heatingModeStatus": None,
+        "temperature": "4.0",
+        "presentVolts": "13.50",
+        "cellVolts": None,
+        "maximumCapacity": "100.00",
+        "totalMaximumCapacity": "100.00",
+        "firmwareVersion": "0026",
+        "sku": None,
+        "batteryLevel": "99.59",
+        "presentAmps": "0.00"
+        }    
+    },
+}

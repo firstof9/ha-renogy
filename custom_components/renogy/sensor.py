@@ -22,26 +22,22 @@ OUTPUT_MODES = {
     2: "Eco",
 }
 
-
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up the OpenEVSE sensors."""
     coordinator = hass.data[DOMAIN][entry.entry_id][COORDINATOR]
-
     sensors = []
     for device_id, device in coordinator.data.items():
         for sensor in SENSOR_TYPES:  # pylint: disable=consider-using-dict-items
             if sensor in device.keys():  # pylint: disable=consider-using-dict-items
-                unique_id = device["serial"] or device_id
                 sensors.append(
                     RenogySensor(
-                        SENSOR_TYPES[sensor], unique_id, device_id, coordinator, entry
+                        SENSOR_TYPES[sensor], device_id, coordinator, entry
                     )
                 )
             if sensor in device["data"].keys():
-                unique_id = device["serial"] or device_id
                 sensors.append(
                     RenogySensor(
-                        SENSOR_TYPES[sensor], unique_id, device_id, coordinator, entry
+                        SENSOR_TYPES[sensor], device_id, coordinator, entry
                     )
                 )
 
@@ -54,7 +50,6 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
     def __init__(
         self,
         sensor_description: SensorEntityDescription,
-        unique_id: str,
         device_id: str,
         coordinator: str,
         config: ConfigEntry,
@@ -66,20 +61,19 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
         self.entity_description = sensor_description
         self._name = sensor_description.name
         self._type = sensor_description.key
-        self._unique_id = unique_id
         self._data = coordinator.data
         self.coordinator = coordinator
         self._state = None
 
         self._attr_icon = sensor_description.icon
         self._attr_name = f"{coordinator.data[device_id]["name"]} {self._name}"
-        self._attr_unique_id = f"{self._name}_{self._unique_id}"
+        self._attr_unique_id = f"{self._name}_{device_id}"
 
     @property
     def device_info(self) -> dict:
         """Return a port description for device registry."""
         info = {
-            "identifiers": {(DOMAIN, self._unique_id)},
+            "identifiers": {(DOMAIN, self._device_id)},
         }
         return info
 

@@ -27,10 +27,8 @@ async def async_setup_entry(hass, entry, async_add_devices):
         for (
             binary_sensor
         ) in BINARY_SENSORS:  # pylint: disable=consider-using-dict-items
-            unique_id = device["serial"] or device_id
             temp_obj = RenogyBinarySensor(
                 BINARY_SENSORS[binary_sensor],
-                unique_id,
                 device_id,
                 coordinator,
                 entry,
@@ -53,7 +51,6 @@ class RenogyBinarySensor(CoordinatorEntity, BinarySensorEntity):
     def __init__(
         self,
         sensor_description: BinarySensorEntityDescription,
-        unique_id: str,
         device_id: str,
         coordinator: DataUpdateCoordinator,
         config: ConfigEntry,
@@ -65,17 +62,16 @@ class RenogyBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self.entity_description = sensor_description
         self._name = sensor_description.name
         self._type = sensor_description.key
-        self._unique_id = unique_id
         self._device_id = device_id
 
         self._attr_name = f"{coordinator.data[device_id]["name"]} {self._name}"
-        self._attr_unique_id = f"{self._name}_{self._unique_id}"
+        self._attr_unique_id = f"{self._name}_{device_id}"
 
     @property
     def device_info(self) -> dict:
         """Return a port description for device registry."""
         info = {
-            "identifiers": {(DOMAIN, self._unique_id)},
+            "identifiers": {(DOMAIN, self._device_id)},
         }
 
         return info
