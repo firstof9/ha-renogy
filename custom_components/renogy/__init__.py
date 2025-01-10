@@ -96,6 +96,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
 
     return True
 
+
 async def async_find_hub(coordinator) -> bool:
     """Find and return hub."""
     hub = None
@@ -110,7 +111,8 @@ async def async_find_hub(coordinator) -> bool:
             else:
                 hub = device_id
 
-    return hub            
+    return hub
+
 
 async def async_remove_config_entry_device(  # pylint: disable-next=unused-argument
     hass: HomeAssistant, config_entry: ConfigEntry, device_entry: dr.DeviceEntry

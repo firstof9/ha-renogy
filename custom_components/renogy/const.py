@@ -381,6 +381,6 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.CURRENT,
-        suggested_display_precision=2,   
-    ), 
+        suggested_display_precision=2,
+    ),
 }
