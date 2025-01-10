@@ -1,1 +1,1 @@
-py_renogy==1.0.4
+py_renogy==1.0.5
