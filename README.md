@@ -66,6 +66,26 @@ You probably do not want to do this! Use the HACS method above unless you know w
 
 <!---->
 
+## Exposed Entities
+
+This is depedent on device, but here are some examples of the entities that are exposed for the:
+
+Renogy ONE Core and connected devices:
+
+![image](https://github.com/user-attachments/assets/7514e368-40b6-4ba0-9c51-29bf6cd966dd)
+
+Renogy 100 ah self-heating battery (RBT100LFP12SH-G1)
+
+![image](https://github.com/user-attachments/assets/1189a70d-35d5-463e-923f-c4bf71e693d7)
+
+Renogy Rover 40 Li (RNG-CTRL-RVR40)
+
+![image](https://github.com/user-attachments/assets/65c07a11-4cfa-472c-84dc-ce28bf02923b)
+
+Renogy Pure Sine Wave 1000 Inverter (RINVTPGH110111S)
+
+![image](https://github.com/user-attachments/assets/b204212b-8f86-4960-b54d-ed62bddfe2aa)
+
 ## Contributions are welcome!
 
 If you want to contribute to this please read the [Contribution guidelines](CONTRIBUTING.md)
