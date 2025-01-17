@@ -21,6 +21,13 @@ OUTPUT_MODES = {
     1: "Normal",
     2: "Eco",
 }
+BATTERY_TYPE = {
+    0: "User Defined",
+    1: "Flooded",
+    2: "Gel",
+    3: "AGM",
+    4: "Lithium",
+}
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up the OpenEVSE sensors."""
@@ -90,6 +97,8 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
         if self._type in data.keys():
             if self._type == "output":
                 value = OUTPUT_MODES[data[self._type]]
+            if self._type == "batteryType" and isinstance(data[self._type], int):
+                value = BATTERY_TYPE[data[self._type]]
             else:
                 value = data[self._type]
             self._state = value
