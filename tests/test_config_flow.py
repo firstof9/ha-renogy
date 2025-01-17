@@ -385,3 +385,159 @@ async def test_form_reconfigure_api_error(
         assert result["type"] is FlowResultType.FORM
         assert result["step_id"] == step_id
         assert result["errors"] == {CONF_NAME: "api_error"}
+
+
+@pytest.mark.parametrize(
+    "input,step_id",
+    [
+        (
+            {
+                "name": DEVICE_NAME,
+                "secret_key": "SuperSecretKey",
+                "access_key": "SuperSpecialAccessKey",
+            },
+            "reconfigure",
+        ),
+    ],
+)
+async def test_form_reconfigure_bad_auth(
+    input,
+    step_id,
+    hass,
+    mock_api_not_auth,
+    caplog,
+):
+    """Test we get the form."""
+    with caplog.at_level(logging.DEBUG):
+        await setup.async_setup_component(hass, "persistent_notification", {})
+        entry = MockConfigEntry(
+            domain=DOMAIN,
+            title=DEVICE_NAME,
+            data=CONFIG_DATA,
+        )
+        entry.add_to_hass(hass)
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        reconfigure_result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={
+                "source": config_entries.SOURCE_RECONFIGURE,
+                "entry_id": entry.entry_id,
+            },
+        )
+        assert reconfigure_result["type"] is FlowResultType.FORM
+        assert reconfigure_result["step_id"] == step_id
+
+        result = await hass.config_entries.flow.async_configure(
+            reconfigure_result["flow_id"], input
+        )
+
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == step_id
+        assert result["errors"] == {
+            CONF_ACCESS_KEY: "invalid_key",
+            CONF_SECRET_KEY: "invalid_key",
+        }
+
+
+@pytest.mark.parametrize(
+    "input,step_id",
+    [
+        (
+            {
+                "name": DEVICE_NAME,
+                "secret_key": "SuperSecretKey",
+                "access_key": "SuperSpecialAccessKey",
+            },
+            "reconfigure",
+        ),
+    ],
+)
+async def test_form_reconfigure_rate_limit(
+    input,
+    step_id,
+    hass,
+    mock_api_rate_limit,
+    caplog,
+):
+    """Test we get the form."""
+    with caplog.at_level(logging.DEBUG):
+        await setup.async_setup_component(hass, "persistent_notification", {})
+        entry = MockConfigEntry(
+            domain=DOMAIN,
+            title=DEVICE_NAME,
+            data=CONFIG_DATA,
+        )
+        entry.add_to_hass(hass)
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        reconfigure_result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={
+                "source": config_entries.SOURCE_RECONFIGURE,
+                "entry_id": entry.entry_id,
+            },
+        )
+        assert reconfigure_result["type"] is FlowResultType.FORM
+        assert reconfigure_result["step_id"] == step_id
+
+        result = await hass.config_entries.flow.async_configure(
+            reconfigure_result["flow_id"], input
+        )
+
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == step_id
+        assert result["errors"] == {CONF_NAME: "rate_limit"}
+
+
+@pytest.mark.parametrize(
+    "input,step_id",
+    [
+        (
+            {
+                "name": DEVICE_NAME,
+                "secret_key": "SuperSecretKey",
+                "access_key": "SuperSpecialAccessKey",
+            },
+            "reconfigure",
+        ),
+    ],
+)
+async def test_form_reconfigure_api_error(
+    input,
+    step_id,
+    hass,
+    mock_api_not_found,
+    caplog,
+):
+    """Test we get the form."""
+    with caplog.at_level(logging.DEBUG):
+        await setup.async_setup_component(hass, "persistent_notification", {})
+        entry = MockConfigEntry(
+            domain=DOMAIN,
+            title=DEVICE_NAME,
+            data=CONFIG_DATA,
+        )
+        entry.add_to_hass(hass)
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        reconfigure_result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={
+                "source": config_entries.SOURCE_RECONFIGURE,
+                "entry_id": entry.entry_id,
+            },
+        )
+        assert reconfigure_result["type"] is FlowResultType.FORM
+        assert reconfigure_result["step_id"] == step_id
+
+        result = await hass.config_entries.flow.async_configure(
+            reconfigure_result["flow_id"], input
+        )
+
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == step_id
+        assert result["errors"] == {CONF_NAME: "api_error"}
