@@ -53,7 +53,6 @@ BINARY_SENSORS: Final[dict[str, BinarySensorEntityDescription]] = {
     "heatingModeStatus": BinarySensorEntityDescription(
         name="Heating Mode",
         key="heatingModeStatus",
-        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     "state": BinarySensorEntityDescription(
         name="State",
