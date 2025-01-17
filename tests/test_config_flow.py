@@ -240,11 +240,11 @@ async def test_form_reconfigure_no_devices(
                 "secret_key": "SuperSecretKey",
                 "access_key": "SuperSpecialAccessKey",
             },
-            "reconfigure",
+            "user",
         ),
     ],
 )
-async def test_form_reconfigure_bad_auth(
+async def test_form_config_bad_auth(
     input,
     step_id,
     hass,
@@ -252,29 +252,26 @@ async def test_form_reconfigure_bad_auth(
     caplog,
 ):
     """Test we get the form."""
-    with caplog.at_level(logging.DEBUG):
-        await setup.async_setup_component(hass, "persistent_notification", {})
-        entry = MockConfigEntry(
-            domain=DOMAIN,
-            title=DEVICE_NAME,
-            data=CONFIG_DATA,
-        )
-        entry.add_to_hass(hass)
-        await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
+    await setup.async_setup_component(hass, "persistent_notification", {})
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == step_id
 
-        reconfigure_result = await hass.config_entries.flow.async_init(
-            DOMAIN,
-            context={
-                "source": config_entries.SOURCE_RECONFIGURE,
-                "entry_id": entry.entry_id,
-            },
+    with patch(
+        "custom_components.renogy.async_setup_entry",
+        return_value=True,
+    ) as mock_setup_entry:
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], input
         )
-        assert reconfigure_result["type"] is FlowResultType.FORM
-        assert reconfigure_result["step_id"] == step_id
+
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == step_id
 
         result = await hass.config_entries.flow.async_configure(
-            reconfigure_result["flow_id"], input
+            result["flow_id"], input
         )
 
         assert result["type"] is FlowResultType.FORM
@@ -294,11 +291,11 @@ async def test_form_reconfigure_bad_auth(
                 "secret_key": "SuperSecretKey",
                 "access_key": "SuperSpecialAccessKey",
             },
-            "reconfigure",
+            "user",
         ),
     ],
 )
-async def test_form_reconfigure_rate_limit(
+async def test_form_config_rate_limit(
     input,
     step_id,
     hass,
@@ -306,29 +303,25 @@ async def test_form_reconfigure_rate_limit(
     caplog,
 ):
     """Test we get the form."""
-    with caplog.at_level(logging.DEBUG):
-        await setup.async_setup_component(hass, "persistent_notification", {})
-        entry = MockConfigEntry(
-            domain=DOMAIN,
-            title=DEVICE_NAME,
-            data=CONFIG_DATA,
-        )
-        entry.add_to_hass(hass)
-        await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
+    await setup.async_setup_component(hass, "persistent_notification", {})
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == step_id
 
-        reconfigure_result = await hass.config_entries.flow.async_init(
-            DOMAIN,
-            context={
-                "source": config_entries.SOURCE_RECONFIGURE,
-                "entry_id": entry.entry_id,
-            },
+    with patch(
+        "custom_components.renogy.async_setup_entry",
+        return_value=True,
+    ) as mock_setup_entry:
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], input
         )
-        assert reconfigure_result["type"] is FlowResultType.FORM
-        assert reconfigure_result["step_id"] == step_id
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == step_id
 
         result = await hass.config_entries.flow.async_configure(
-            reconfigure_result["flow_id"], input
+            result["flow_id"], input
         )
 
         assert result["type"] is FlowResultType.FORM
@@ -345,11 +338,11 @@ async def test_form_reconfigure_rate_limit(
                 "secret_key": "SuperSecretKey",
                 "access_key": "SuperSpecialAccessKey",
             },
-            "reconfigure",
+            "user",
         ),
     ],
 )
-async def test_form_reconfigure_api_error(
+async def test_form_config_api_error(
     input,
     step_id,
     hass,
@@ -357,29 +350,25 @@ async def test_form_reconfigure_api_error(
     caplog,
 ):
     """Test we get the form."""
-    with caplog.at_level(logging.DEBUG):
-        await setup.async_setup_component(hass, "persistent_notification", {})
-        entry = MockConfigEntry(
-            domain=DOMAIN,
-            title=DEVICE_NAME,
-            data=CONFIG_DATA,
-        )
-        entry.add_to_hass(hass)
-        await hass.config_entries.async_setup(entry.entry_id)
-        await hass.async_block_till_done()
+    await setup.async_setup_component(hass, "persistent_notification", {})
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == step_id
 
-        reconfigure_result = await hass.config_entries.flow.async_init(
-            DOMAIN,
-            context={
-                "source": config_entries.SOURCE_RECONFIGURE,
-                "entry_id": entry.entry_id,
-            },
+    with patch(
+        "custom_components.renogy.async_setup_entry",
+        return_value=True,
+    ) as mock_setup_entry:
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], input
         )
-        assert reconfigure_result["type"] is FlowResultType.FORM
-        assert reconfigure_result["step_id"] == step_id
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == step_id
 
         result = await hass.config_entries.flow.async_configure(
-            reconfigure_result["flow_id"], input
+            result["flow_id"], input
         )
 
         assert result["type"] is FlowResultType.FORM
@@ -541,3 +530,107 @@ async def test_form_reconfigure_api_error(
         assert result["type"] is FlowResultType.FORM
         assert result["step_id"] == step_id
         assert result["errors"] == {CONF_NAME: "api_error"}
+
+
+@pytest.mark.parametrize(
+    "input,step_id",
+    [
+        (
+            {
+                "name": DEVICE_NAME,
+                "secret_key": "SuperSecretKey",
+                "access_key": "SuperSpecialAccessKey",
+            },
+            "user",
+        ),
+    ],
+)
+async def test_form_config_api_error(
+    input,
+    step_id,
+    hass,
+    mock_api,
+    caplog,
+):
+    """Test we get the form."""
+    await setup.async_setup_component(hass, "persistent_notification", {})
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == step_id
+
+    with patch(
+        "custom_components.renogy.async_setup_entry",
+        return_value=True,
+    ) as mock_setup_entry, patch(
+        "custom_components.renogy.config_flow.api.get_devices"
+    ) as mock_api_error:
+        mock_api_error.side_effect = Exception("General Error")
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], input
+        )
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == step_id
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], input
+        )
+
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == step_id
+        assert result["errors"] == {CONF_NAME: "general"}
+
+
+@pytest.mark.parametrize(
+    "input,step_id",
+    [
+        (
+            {
+                "name": DEVICE_NAME,
+                "secret_key": "SuperSecretKey",
+                "access_key": "SuperSpecialAccessKey",
+            },
+            "reconfigure",
+        ),
+    ],
+)
+async def test_form_reconfigure_api_error(
+    input,
+    step_id,
+    hass,
+    mock_api_not_found,
+    caplog,
+):
+    """Test we get the form."""
+    with caplog.at_level(logging.DEBUG), patch(
+        "custom_components.renogy.config_flow.api.get_devices"
+    ) as mock_api_error:
+        mock_api_error.side_effect = Exception("General Error")
+        await setup.async_setup_component(hass, "persistent_notification", {})
+        entry = MockConfigEntry(
+            domain=DOMAIN,
+            title=DEVICE_NAME,
+            data=CONFIG_DATA,
+        )
+        entry.add_to_hass(hass)
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        reconfigure_result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={
+                "source": config_entries.SOURCE_RECONFIGURE,
+                "entry_id": entry.entry_id,
+            },
+        )
+        assert reconfigure_result["type"] is FlowResultType.FORM
+        assert reconfigure_result["step_id"] == step_id
+
+        result = await hass.config_entries.flow.async_configure(
+            reconfigure_result["flow_id"], input
+        )
+
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == step_id
+        assert result["errors"] == {CONF_NAME: "general"}

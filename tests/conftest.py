@@ -143,6 +143,17 @@ def mock_api_not_found(mock_aioclient):
     )
 
 
+@pytest.fixture(name="mock_api_exception")
+def mock_api_exception(mock_aioclient):
+    """Fixure to mock API calls."""
+    mock_aioclient.get(
+        BASE_URL + DEVICE_LIST,
+        status=404,
+        body="[]",
+        repeat=True,
+    )
+
+
 @pytest.fixture(name="mock_coordinator")
 def mock_coord():
     """Mock charger data."""

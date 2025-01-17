@@ -10,7 +10,6 @@ from homeassistant import config_entries
 from homeassistant.helpers import config_validation as cv
 from renogyapi import Renogy as api
 from renogyapi.exceptions import (
-    APIError,
     NoDevices,
     NotAuthorized,
     RateLimit,
