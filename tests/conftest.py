@@ -110,6 +110,39 @@ def mock_api_no_devices(mock_aioclient):
     )
 
 
+@pytest.fixture(name="mock_api_not_auth")
+def mock_api_not_auth(mock_aioclient):
+    """Fixure to mock API calls."""
+    mock_aioclient.get(
+        BASE_URL + DEVICE_LIST,
+        status=401,
+        body="[]",
+        repeat=True,
+    )
+
+
+@pytest.fixture(name="mock_api_rate_limit")
+def mock_api_rate_limit(mock_aioclient):
+    """Fixure to mock API calls."""
+    mock_aioclient.get(
+        BASE_URL + DEVICE_LIST,
+        status=429,
+        body="[]",
+        repeat=True,
+    )
+
+
+@pytest.fixture(name="mock_api_not_found")
+def mock_api_not_found(mock_aioclient):
+    """Fixure to mock API calls."""
+    mock_aioclient.get(
+        BASE_URL + DEVICE_LIST,
+        status=404,
+        body="[]",
+        repeat=True,
+    )
+
+
 @pytest.fixture(name="mock_coordinator")
 def mock_coord():
     """Mock charger data."""

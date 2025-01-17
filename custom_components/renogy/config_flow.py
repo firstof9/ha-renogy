@@ -59,9 +59,6 @@ class OpenEVSEFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             except RateLimit:
                 _LOGGER.exception("Rate limit exceeded.")
                 self._errors[CONF_NAME] = "rate_limit"
-            except APIError:
-                _LOGGER.exception("API error communicating with Renogy.")
-                self._errors[CONF_NAME] = "api_error"
             except UrlNotFound:
                 _LOGGER.exception("URL error communicating with Renogy.")
                 self._errors[CONF_NAME] = "api_error"
