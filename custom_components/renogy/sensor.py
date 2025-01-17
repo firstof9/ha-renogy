@@ -29,6 +29,7 @@ BATTERY_TYPE = {
     4: "Lithium",
 }
 
+
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up the OpenEVSE sensors."""
     coordinator = hass.data[DOMAIN][entry.entry_id][COORDINATOR]
@@ -37,15 +38,11 @@ async def async_setup_entry(hass, entry, async_add_entities):
         for sensor in SENSOR_TYPES:  # pylint: disable=consider-using-dict-items
             if sensor in device.keys():  # pylint: disable=consider-using-dict-items
                 sensors.append(
-                    RenogySensor(
-                        SENSOR_TYPES[sensor], device_id, coordinator, entry
-                    )
+                    RenogySensor(SENSOR_TYPES[sensor], device_id, coordinator, entry)
                 )
             if sensor in device["data"].keys():
                 sensors.append(
-                    RenogySensor(
-                        SENSOR_TYPES[sensor], device_id, coordinator, entry
-                    )
+                    RenogySensor(SENSOR_TYPES[sensor], device_id, coordinator, entry)
                 )
 
     async_add_entities(sensors, False)

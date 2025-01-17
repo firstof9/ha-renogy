@@ -46,6 +46,9 @@ async def test_sensors(hass, mock_api, caplog):
         state = hass.states.get("sensor.rng_ctrl_rvr40_connection_type")
         assert state
         assert state.state == "Bluetooth"
+        state = hass.states.get("sensor.rng_ctrl_rvr40_battery_type")
+        assert state
+        assert state.state == "Lithium"
         state = hass.states.get("sensor.rbt100lfp12sh_g1_connection_type")
         assert state
         assert state.state == "RS485"

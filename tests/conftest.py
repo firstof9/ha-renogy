@@ -109,6 +109,7 @@ def mock_api_no_devices(mock_aioclient):
         repeat=True,
     )
 
+
 @pytest.fixture(name="mock_coordinator")
 def mock_coord():
     """Mock charger data."""

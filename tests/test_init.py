@@ -66,7 +66,10 @@ async def test_setup_and_unload_entry(hass, mock_api, caplog):
         assert len(hass.states.async_entity_ids(BINARY_SENSOR_DOMAIN)) == 0
         assert len(hass.states.async_entity_ids(SENSOR_DOMAIN)) == 0
 
-async def test_duplicate_serials(hass, mock_api, mock_coordinator, device_registry: dr.DeviceRegistry, caplog):
+
+async def test_duplicate_serials(
+    hass, mock_api, mock_coordinator, device_registry: dr.DeviceRegistry, caplog
+):
     """Test setup_entry."""
     entry = MockConfigEntry(
         domain=DOMAIN,
