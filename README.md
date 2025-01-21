@@ -72,7 +72,7 @@ This is depedent on type of device. Here are some examples of the entities that 
 
 Renogy ONE Core and connected devices:
 
-![image](https://github.com/user-attachments/assets/874d33d9-5798-46b0-8060-cf3a0295a177)
+![image](https://github.com/user-attachments/assets/abe93dd1-5153-41f4-8e89-127a4d1b0d00)
 
 Renogy 100 ah self-heating battery (RBT100LFP12SH-G1)
 
