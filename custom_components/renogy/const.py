@@ -244,7 +244,7 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLTAGE,
-        suggested_display_precision=0,
+        suggested_display_precision=2,
     ),
     "acOutputHz": SensorEntityDescription(
         key="acOutputHz",
