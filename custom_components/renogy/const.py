@@ -382,4 +382,22 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         device_class=SensorDeviceClass.CURRENT,
         suggested_display_precision=2,
     ),
+    "startBatteryVolts": SensorEntityDescription(
+        key="startBatteryVolts",
+        name="Start Battery Voltage",
+        icon="mdi:sine-wave",
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        suggested_display_precision=1,
+    ),
+    "startBatteryAmps": SensorEntityDescription(
+        key="startBatteryAmps",
+        name="Start Battery Ampers",
+        icon="mdi:sine-wave",
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.CURRENT,
+        suggested_display_precision=1,
+    ),
 }
