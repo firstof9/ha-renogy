@@ -61,6 +61,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
 
     device_registry = dr.async_get(hass)
     hub = await async_find_hub(coordinator)
+    mac = []
     for (
         device_id,
         device,
@@ -73,11 +74,16 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
 
         via = (DOMAIN, hub) if device_id != hub and hub else None
 
+        # Seems some connections may have duplicate macs so we have to keep
+        # a list and fall back to the device_id if there's a duplicate
+        network_mac = device["mac"] if device["mac"] not in mac else device_id
+        mac.append(device["mac"])
+
         _LOGGER.debug("Using device: %s via %s", device_id, via)
 
         device_registry.async_get_or_create(
             config_entry_id=config_entry.entry_id,
-            connections={(dr.CONNECTION_NETWORK_MAC, device["mac"])},
+            connections={(dr.CONNECTION_NETWORK_MAC, network_mac)},
             identifiers={(DOMAIN, device_id)},
             serial_number=serial,
             name=device["name"],
