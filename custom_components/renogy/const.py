@@ -133,6 +133,8 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         key="soc",
         name="State of Charge",
         native_unit_of_measurement=PERCENTAGE,
+        device_class=SensorDeviceClass.BATTERY,
+        state_class=SensorStateClass.MEASUREMENT,        
         suggested_display_precision=1,
     ),
     "batteryLevel": SensorEntityDescription(
