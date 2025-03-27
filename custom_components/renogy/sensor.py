@@ -65,6 +65,7 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
         self.entity_description = sensor_description
         self._name = sensor_description.name
         self._type = sensor_description.key
+        self._unit = sensor_description.native_unit_of_measurement
         self._data = coordinator.data
         self.coordinator = coordinator
         self._state = None
@@ -101,6 +102,14 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
             self._state = value
         _LOGGER.debug("Sensor [%s] updated value: %s", self._type, self._state)
         return self._state
+    
+    @property
+    def native_unit_of_measurement(self) -> Any:
+        """Return the unit of measurement."""    
+        data = self.coordinator.data[self._device_id]["data"]
+        if data and "unit" in data.keys():
+            return data["unit"]
+        return self._unit
 
     @property
     def available(self) -> bool:
