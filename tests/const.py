@@ -120,7 +120,11 @@ DUPE_SERIAL = {
         "connection": "Zigbee",
         "serial": "00124B0024CCDB0F",
         "model": "TH01",
-        "data": {"temperature": (10.8, "C"), "humidity": (58, "%"), "lowbattery": (57, "%")},
+        "data": {
+            "temperature": (10.8, "C"),
+            "humidity": (58, "%"),
+            "lowbattery": (57, "%"),
+        },
     },
     "230703112949819001": {
         "deviceId": "230703112949819001",

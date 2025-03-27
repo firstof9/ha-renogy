@@ -58,3 +58,4 @@ async def test_sensors(hass, mock_api, caplog):
         state = hass.states.get("sensor.rbt100lfp12sh_g1_battery_level")
         assert state
         assert state.state == "54.784637"
+        assert state.attributes["unit_of_measurement"] == "%"
