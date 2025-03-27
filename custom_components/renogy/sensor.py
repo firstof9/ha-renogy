@@ -94,11 +94,11 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
             self._state = None
         if self._type in data.keys():
             if self._type == "output":
-                value = OUTPUT_MODES[data[self._type]]
-            elif self._type == "batteryType" and isinstance(data[self._type], int):
-                value = BATTERY_TYPE[data[self._type]]
+                value = OUTPUT_MODES[data[self._type][0]]
+            elif self._type == "batteryType" and isinstance(data[self._type][0], int):
+                value = BATTERY_TYPE[data[self._type][0]]
             else:
-                value = data[self._type]
+                value = data[self._type][0]
             self._state = value
         _LOGGER.debug("Sensor [%s] updated value: %s", self._type, self._state)
         return self._state
@@ -108,7 +108,7 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
         """Return the unit of measurement."""
         data = self.coordinator.data[self._device_id]["data"]
         if data and "unit" in data.keys():
-            return data["unit"]
+            return data[self._type][1]
         return self._unit
 
     @property

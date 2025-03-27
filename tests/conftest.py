@@ -73,6 +73,24 @@ def mock_api(mock_aioclient):
         body=load_fixture("realtime_data.json"),
         repeat=True,
     )
+    mock_aioclient.get(
+        f"{BASE_URL}/device/datamap/12345678903",
+        status=200,
+        body=load_fixture("datamap.json"),
+        repeat=True,
+    )
+    mock_aioclient.get(
+        f"{BASE_URL}/device/datamap/12345678902",
+        status=200,
+        body=load_fixture("datamap2.json"),
+        repeat=True,
+    )
+    mock_aioclient.get(
+        f"{BASE_URL}/device/datamap/12345678901",
+        status=200,
+        body=load_fixture("datamap3.json"),
+        repeat=True,
+    )
 
 
 @pytest.fixture(name="mock_api_no_devices")
@@ -106,6 +124,24 @@ def mock_api_no_devices(mock_aioclient):
         f"{BASE_URL}/device/data/latest/12345678903",
         status=200,
         body=load_fixture("realtime_data.json"),
+        repeat=True,
+    )
+    mock_aioclient.get(
+        f"{BASE_URL}/device/datamap/12345678903",
+        status=200,
+        body=load_fixture("datamap.json"),
+        repeat=True,
+    )
+    mock_aioclient.get(
+        f"{BASE_URL}/device/datamap/12345678902",
+        status=200,
+        body=load_fixture("datamap2.json"),
+        repeat=True,
+    )
+    mock_aioclient.get(
+        f"{BASE_URL}/device/datamap/12345678901",
+        status=200,
+        body=load_fixture("datamap3.json"),
         repeat=True,
     )
 

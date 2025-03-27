@@ -1,0 +1,68 @@
+[
+    {
+        "name": "batteryLevel",
+        "type": "float",
+        "operation": "RO",
+        "length": 2,
+        "unit": "%",
+        "desc": "",
+        "max": 100,
+        "min": 0
+    },
+    {
+        "name": "maximumCapacity",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "Ah",
+        "desc": "",
+        "max": 10000,
+        "min": 0.1
+    },
+    {
+        "name": "presentCapacity",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "Ah",
+        "desc": "",
+        "max": 10000,
+        "min": 0
+    },
+    {
+        "name": "presentVolts",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "V",
+        "desc": "",
+        "max": 1000,
+        "min": 0
+    },
+    {
+        "name": "presentAmps",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "mA",
+        "desc": "",
+        "max": 1000000,
+        "min": -1000000
+    },
+    {
+        "name": "averageTemperature",
+        "type": "int",
+        "operation": "RO",
+        "length": 4,
+        "unit": "°C",
+        "desc": ""
+    },
+    {
+        "name": "heatingModeStatus",
+        "type": "int",
+        "operation": "RO",
+        "length": 4,
+        "unit": "",
+        "desc": ""
+    }
+]
