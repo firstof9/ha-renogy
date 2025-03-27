@@ -28,6 +28,7 @@ BATTERY_TYPE = {
     3: "AGM",
     4: "Lithium",
 }
+FILTER_UNITS = ["℃", "KWh"]
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
@@ -65,7 +66,7 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
         self.entity_description = sensor_description
         self._name = sensor_description.name
         self._type = sensor_description.key
-        self._unit = sensor_description.native_unit_of_measurement
+        self.unit = sensor_description.native_unit_of_measurement
         self._data = coordinator.data
         self.coordinator = coordinator
         self._state = None
@@ -107,10 +108,17 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
     def native_unit_of_measurement(self) -> Any:
         """Return the unit of measurement."""
         data = self.coordinator.data[self._device_id]["data"]
-        if data and self._type in data.keys() and isinstance(data[self._type], tuple):
-            if data[self._type][1] != "":
-                return data[self._type][1]
-        return self._unit
+        return (
+            self.unit
+            if not (
+                data
+                and self._type in data.keys()
+                and isinstance(data[self._type], tuple)
+                and data[self._type][1] in FILTER_UNITS
+                and data[self._type][1] != ""
+            )
+            else data[self._type][1]
+        )
 
     @property
     def available(self) -> bool:
