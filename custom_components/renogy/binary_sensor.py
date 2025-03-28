@@ -91,4 +91,4 @@ class RenogyBinarySensor(CoordinatorEntity, BinarySensorEntity):
             _LOGGER.info("binary_sensor [%s] not supported.", self._type)
             return None
         _LOGGER.debug("binary_sensor [%s]: %s", self._name, data[self._type])
-        return cast(bool, data[self._type] == 1)
+        return cast(bool, data[self._type][0] == 1)
