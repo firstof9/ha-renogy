@@ -1,1 +1,140 @@
-[{"name":"loadAmps","type":"float","operation":"RO","length":4,"unit":"A","desc":"","max":1000000.0,"min":-1000000.0},{"name":"loadVolts","type":"float","operation":"RO","length":4,"unit":"W","desc":""},{"name":"loadWatts","type":"float","operation":"RO","length":4,"unit":"W","desc":""},{"name":"solarChargingVolts","type":"float","operation":"RO","length":4,"unit":"V","desc":"","max":1000.0,"min":0.0},{"name":"solarChargingAmps","type":"float","operation":"RO","length":4,"unit":"A","desc":"","max":1000000.0,"min":-1000000.0},{"name":"solarWatts","type":"float","operation":"RO","length":4,"unit":"W","desc":"","max":10000.0,"min":0.0},{"name":"auxiliaryBatteryTemperature","type":"float","operation":"RO","length":2,"unit":"°C","desc":"","max":3276.8,"min":-273.2},{"name":"totalKwhGenerated","type":"float","operation":"RO","length":4,"unit":"KWh","desc":""},{"name":"auxiliaryBatteryChargingVolts","type":"float","operation":"RO","length":2,"unit":"V","desc":"","max":10000.0,"min":0.0},{"name":"gridChargeAmps","type":"float","operation":"RO","length":4,"unit":"mA","desc":"","max":1000000.0,"min":-1000000.0},{"name":"auxiliaryBatteryChargingWatts","type":"float","operation":"RO","length":2,"unit":"W","desc":"","max":65535.0,"min":0.0},{"name":"systemVolts","type":"int","operation":"RO","length":2,"unit":"","desc":""},{"name":"batteryType","type":"int","operation":"RO","length":2,"unit":"","desc":""},{"name":"status","type":"int","operation":"RO","length":2,"unit":"","desc":""},{"name":"soc","type":"float","operation":"RO","length":4,"unit":"%","desc":"","max":1000.0,"min":0.0}]
+[
+    {
+        "name": "loadAmps",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "A",
+        "desc": "",
+        "max": 1000000,
+        "min": -1000000
+    },
+    {
+        "name": "loadVolts",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "W",
+        "desc": ""
+    },
+    {
+        "name": "loadWatts",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "W",
+        "desc": ""
+    },
+    {
+        "name": "solarChargingVolts",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "V",
+        "desc": "",
+        "max": 1000,
+        "min": 0
+    },
+    {
+        "name": "solarChargingAmps",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "A",
+        "desc": "",
+        "max": 1000000,
+        "min": -1000000
+    },
+    {
+        "name": "solarWatts",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "W",
+        "desc": "",
+        "max": 10000,
+        "min": 0
+    },
+    {
+        "name": "auxiliaryBatteryTemperature",
+        "type": "float",
+        "operation": "RO",
+        "length": 2,
+        "unit": "°C",
+        "desc": "",
+        "max": 3276.8,
+        "min": -273.2
+    },
+    {
+        "name": "totalKwhGenerated",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "KWh",
+        "desc": ""
+    },
+    {
+        "name": "auxiliaryBatteryChargingVolts",
+        "type": "float",
+        "operation": "RO",
+        "length": 2,
+        "unit": "V",
+        "desc": "",
+        "max": 10000,
+        "min": 0
+    },
+    {
+        "name": "gridChargeAmps",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "mA",
+        "desc": "",
+        "max": 1000000,
+        "min": -1000000
+    },
+    {
+        "name": "auxiliaryBatteryChargingWatts",
+        "type": "float",
+        "operation": "RO",
+        "length": 2,
+        "unit": "W",
+        "desc": "",
+        "max": 65535,
+        "min": 0
+    },
+    {
+        "name": "systemVolts",
+        "type": "int",
+        "operation": "RO",
+        "length": 2,
+        "unit": "",
+        "desc": ""
+    },
+    {
+        "name": "batteryType",
+        "type": "int",
+        "operation": "RO",
+        "length": 2,
+        "unit": "",
+        "desc": ""
+    },
+    {
+        "name": "status",
+        "type": "int",
+        "operation": "RO",
+        "length": 2,
+        "unit": "",
+        "desc": ""
+    },
+    {
+        "name": "soc",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "%",
+        "desc": "",
+        "max": 1000,
+        "min": 0
+    }
+]

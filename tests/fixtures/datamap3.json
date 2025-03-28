@@ -1,1 +1,174 @@
-[{"name":"auxiliaryBatteryTemperature","type":"float","operation":"RO","length":2,"unit":"°C","desc":"","max":3276.8,"min":-273.2},{"name":"loadAmps","type":"float","operation":"RO","length":4,"unit":"A","desc":"","max":1000000.0,"min":-1000000.0},{"name":"loadWatts","type":"int","operation":"RO","length":2,"unit":"W","desc":"","max":10000.0,"min":0.0},{"name":"ueiVolts","type":"float","operation":"RO","length":4,"unit":"V","desc":"","max":5000.0,"min":0.0},{"name":"ueiAmps","type":"float","operation":"RO","length":4,"unit":"mA","desc":"","max":1000000.0,"min":-1000000.0},{"name":"outputVolts","type":"float","operation":"RO","length":4,"unit":"V","desc":"","max":500.0,"min":0.0},{"name":"outputAmps","type":"float","operation":"RO","length":4,"unit":"A","desc":"","max":1000000.0,"min":-1000000.0},{"name":"acOutputHz","type":"float","operation":"RO","length":4,"unit":"Hz","desc":"","max":100.0,"min":0.0},{"name":"loadActiveWatts","type":"int","operation":"RO","length":4,"unit":"W","desc":"","max":10000.0,"min":0.0},{"name":"output","type":"int","operation":"RO","length":2,"unit":"","desc":""},{"name":"loadWattsMode","type":"int","operation":"RO","length":2,"unit":"","desc":""},{"name":"temperature","type":"float","operation":"RO","length":4,"unit":"°C","desc":"","max":85.0,"min":-40.0},{"name":"chargePriority","type":"int","operation":"RO","length":4,"unit":"","desc":""},{"name":"solarChargingVolts","type":"float","operation":"RO","length":4,"unit":"V","desc":"","max":1000.0,"min":0.0},{"name":"solarChargingAmps","type":"float","operation":"RO","length":4,"unit":"A","desc":"","max":1000000.0,"min":-1000000.0},{"name":"solarWatts","type":"float","operation":"RO","length":4,"unit":"W","desc":"","max":10000.0,"min":0.0},{"name":"batteryType","type":"int","operation":"RO","length":2,"unit":"","desc":""},{"name":"batteryVolts","type":"float","operation":"RO","length":4,"unit":"V","desc":"","max":500.0,"min":0.0}]
+[
+    {
+        "name": "auxiliaryBatteryTemperature",
+        "type": "float",
+        "operation": "RO",
+        "length": 2,
+        "unit": "°C",
+        "desc": "",
+        "max": 3276.8,
+        "min": -273.2
+    },
+    {
+        "name": "loadAmps",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "A",
+        "desc": "",
+        "max": 1000000,
+        "min": -1000000
+    },
+    {
+        "name": "loadWatts",
+        "type": "int",
+        "operation": "RO",
+        "length": 2,
+        "unit": "W",
+        "desc": "",
+        "max": 10000,
+        "min": 0
+    },
+    {
+        "name": "ueiVolts",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "V",
+        "desc": "",
+        "max": 5000,
+        "min": 0
+    },
+    {
+        "name": "ueiAmps",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "mA",
+        "desc": "",
+        "max": 1000000,
+        "min": -1000000
+    },
+    {
+        "name": "outputVolts",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "V",
+        "desc": "",
+        "max": 500,
+        "min": 0
+    },
+    {
+        "name": "outputAmps",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "A",
+        "desc": "",
+        "max": 1000000,
+        "min": -1000000
+    },
+    {
+        "name": "acOutputHz",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "Hz",
+        "desc": "",
+        "max": 100,
+        "min": 0
+    },
+    {
+        "name": "loadActiveWatts",
+        "type": "int",
+        "operation": "RO",
+        "length": 4,
+        "unit": "W",
+        "desc": "",
+        "max": 10000,
+        "min": 0
+    },
+    {
+        "name": "output",
+        "type": "int",
+        "operation": "RO",
+        "length": 2,
+        "unit": "",
+        "desc": ""
+    },
+    {
+        "name": "loadWattsMode",
+        "type": "int",
+        "operation": "RO",
+        "length": 2,
+        "unit": "",
+        "desc": ""
+    },
+    {
+        "name": "temperature",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "°C",
+        "desc": "",
+        "max": 85,
+        "min": -40
+    },
+    {
+        "name": "chargePriority",
+        "type": "int",
+        "operation": "RO",
+        "length": 4,
+        "unit": "",
+        "desc": ""
+    },
+    {
+        "name": "solarChargingVolts",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "V",
+        "desc": "",
+        "max": 1000,
+        "min": 0
+    },
+    {
+        "name": "solarChargingAmps",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "A",
+        "desc": "",
+        "max": 1000000,
+        "min": -1000000
+    },
+    {
+        "name": "solarWatts",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "W",
+        "desc": "",
+        "max": 10000,
+        "min": 0
+    },
+    {
+        "name": "batteryType",
+        "type": "int",
+        "operation": "RO",
+        "length": 2,
+        "unit": "",
+        "desc": ""
+    },
+    {
+        "name": "batteryVolts",
+        "type": "float",
+        "operation": "RO",
+        "length": 4,
+        "unit": "V",
+        "desc": "",
+        "max": 500,
+        "min": 0
+    }
+]

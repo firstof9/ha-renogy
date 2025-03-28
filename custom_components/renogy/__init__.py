@@ -60,7 +60,6 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     }
 
     device_registry = dr.async_get(hass)
-    hub = await async_find_hub(coordinator)
     mac = []
     for (
         device_id,
@@ -72,7 +71,13 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
         else:
             serial = None
 
-        via = (DOMAIN, hub) if device_id != hub and hub else None
+        via = (
+            (DOMAIN, device["parent"])
+            if "parent" in device.keys()
+            and device_id != device["parent"]
+            and device["parent"]
+            else None
+        )
 
         # Seems some connections may have duplicate macs so we have to keep
         # a list and fall back to the device_id if there's a duplicate
@@ -97,22 +102,6 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 
     return True
-
-
-async def async_find_hub(coordinator) -> bool:
-    """Find and return hub."""
-    hub = None
-    for (
-        device_id,
-        device,
-    ) in coordinator.data.items():
-        _LOGGER.debug("Looking for hub device...")
-        if device["connection"] == "Hub":
-            hub = device_id
-            _LOGGER.debug("Hub found: %s", hub)
-            break
-
-    return hub
 
 
 async def async_remove_config_entry_device(  # pylint: disable-next=unused-argument

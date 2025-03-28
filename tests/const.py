@@ -20,6 +20,7 @@ DIAG_RESULTS = {
     },
     "12345678901": {
         "deviceId": "12345678901",
+        "parent": "1234567890",
         "name": "Inverter",
         "mac": "32",
         "firmware": "0100.0102.0202",
@@ -51,6 +52,7 @@ DIAG_RESULTS = {
     },
     "12345678902": {
         "deviceId": "12345678902",
+        "parent": "1234567890",
         "name": "RNG-CTRL-RVR40",
         "mac": "F0:F8:F2:5D:5D:8716",
         "firmware": "",
@@ -79,6 +81,7 @@ DIAG_RESULTS = {
     },
     "12345678903": {
         "deviceId": "12345678903",
+        "parent": "1234567890",
         "name": "RBT100LFP12SH-G1",
         "mac": "48",
         "firmware": "",
@@ -113,6 +116,7 @@ DUPE_SERIAL = {
     },
     "250101091000725004": {
         "deviceId": "250101091000725004",
+        "parent": "230314043002434307",
         "name": "Temp & RH Sensor",
         "mac": "",
         "firmware": "",
@@ -128,6 +132,7 @@ DUPE_SERIAL = {
     },
     "230703112949819001": {
         "deviceId": "230703112949819001",
+        "parent": "230314043002434307",
         "name": "RBT100LFP12S-G1",
         "mac": "31",
         "firmware": "",
@@ -154,6 +159,7 @@ DUPE_SERIAL = {
     },
     "220327070523454002": {
         "deviceId": "220327070523454002",
+        "parent": "230314043002434307",
         "name": "RBT100LFP12S-G1",
         "mac": "30",
         "firmware": "",
