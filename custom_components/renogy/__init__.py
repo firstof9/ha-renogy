@@ -136,7 +136,7 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
 
 
 class RenogyUpdateCoordinator(DataUpdateCoordinator):
-    """Class to manage fetching OpenEVSE data."""
+    """Class to manage fetching Renogy data."""
 
     def __init__(self, hass, interval, config, manager):
         """Initialize."""
@@ -172,7 +172,7 @@ class RenogyUpdateCoordinator(DataUpdateCoordinator):
 
 
 class RenogyManager:
-    """OpenEVSE connection manager."""
+    """Renogy connection manager."""
 
     def __init__(  # pylint: disable-next=unused-argument
         self, hass: HomeAssistant, config_entry: ConfigEntry

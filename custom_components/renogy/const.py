@@ -402,4 +402,13 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         device_class=SensorDeviceClass.CURRENT,
         suggested_display_precision=1,
     ),
+    "auxiliaryBatteryChargingAmps": SensorEntityDescription(
+        key="auxiliaryBatteryChargingAmps",
+        name="Aux Battery Charging Ampers",
+        icon="mdi:sine-wave",
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.CURRENT,
+        suggested_display_precision=1,
+    ),    
 }
