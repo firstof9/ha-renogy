@@ -410,5 +410,5 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.CURRENT,
         suggested_display_precision=1,
-    ),    
+    ),
 }
