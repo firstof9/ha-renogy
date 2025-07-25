@@ -119,10 +119,10 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
 
         if data[self._type][1] in FILTER_UNITS:
             return self.unit
-        
+
         if data[self._type][1] == "":
             return None
-        
+
         return data[self._type][1]
 
     @property
