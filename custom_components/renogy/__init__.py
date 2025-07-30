@@ -149,7 +149,13 @@ class RenogyUpdateCoordinator(DataUpdateCoordinator):
 
         _LOGGER.debug("Data will be update every %s", self.interval)
 
-        super().__init__(hass, _LOGGER, config_entry=config, name=self.name, update_interval=self.interval)
+        super().__init__(
+            hass,
+            _LOGGER,
+            config_entry=config,
+            name=self.name,
+            update_interval=self.interval,
+        )
 
     async def _async_update_data(self):
         """Return data."""
