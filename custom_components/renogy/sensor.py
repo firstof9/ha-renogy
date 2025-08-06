@@ -108,10 +108,7 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
     def native_unit_of_measurement(self) -> Any:
         """Return the unit of measurement."""
         data = self.coordinator.data[self._device_id]["data"]
-        if not data:
-            return self.unit
-
-        if self._type not in data:
+        if not data or self._type not in data:
             return self.unit
 
         if not isinstance(data[self._type], tuple):
@@ -121,7 +118,9 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
             return self.unit
 
         if data[self._type][1] == "":
-            return None
+            if self.unit is None:
+                return None
+            return self.unit
 
         return data[self._type][1]
 

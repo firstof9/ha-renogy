@@ -73,7 +73,7 @@ DIAG_RESULTS = {
             "sku": "RNG-CTRL-RVR40",
             "solarChargingAmps": (0.0, "A"),
             "systemVolts": (12, ""),
-            "loadVolts": (0.0, "W"),
+            "loadVolts": (0.0, ""),
             "gridChargeAmps": (0.0, "mA"),
             "batteryType": (4, ""),
             "status": (None, ""),

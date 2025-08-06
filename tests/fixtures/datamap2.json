@@ -14,7 +14,7 @@
         "type": "float",
         "operation": "RO",
         "length": 4,
-        "unit": "W",
+        "unit": "",
         "desc": ""
     },
     {
