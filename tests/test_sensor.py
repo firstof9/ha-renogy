@@ -40,6 +40,7 @@ async def test_sensors(hass, mock_api, caplog):
         state = hass.states.get("sensor.renogy_one_core_connection_type")
         assert state
         assert state.state == "Hub"
+        assert state.attributes["icon"] == "mdi:hub"
         state = hass.states.get("sensor.inverter_connection_type")
         assert state
         assert state.state == "RS485"

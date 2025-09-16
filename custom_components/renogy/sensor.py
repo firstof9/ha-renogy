@@ -29,6 +29,18 @@ BATTERY_TYPE = {
     4: "Lithium",
 }
 FILTER_UNITS = ["℃", "KWh", "AH"]
+CONNECTION_TYPE = {
+    "Bluetooth": "mdi:bluetooth",
+    "Zigbee": "mdi:zigbee",
+    "RVC": "mdi:cable-data",
+    "RS485": "mdi:serial-port",
+    "RS232": "mdi:serial-port",
+    "Ethernet": "mdi:ethernet-cable",
+    "Wifi": "mdi:wifi",
+    "CANBUS": "mdi:cable-data",
+    "Mesh": "mdi:hubspot",
+    "Hub": "mdi:hub",
+}
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
@@ -140,23 +152,4 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
     def update_icon(self) -> None:
         """Update connection type icon."""
         connection = self.coordinator.data[self._device_id][self._type]
-        if connection == "Bluetooth":
-            self._attr_icon = "mdi:bluetooth"
-        if connection == "Zigbee":
-            self._attr_icon = "mdi:zigbee"
-        if connection == "RVC":
-            self._attr_icon = "mdi:cable-data"
-        if connection == "RS485":
-            self._attr_icon = "mdi:serial-port"
-        if connection == "RS232":
-            self._attr_icon = "mdi:serial-port"
-        if connection == "Ethernet":
-            self._attr_icon = "mdi:ethernet-cable"
-        if connection == "Wifi":
-            self._attr_icon = "mdi:wifi"
-        if connection == "CANBUS":
-            self._attr_icon = "mdi:cable-data"
-        if connection == "Mesh":
-            self._attr_icon = "mdi:hubspot"
-        if connection == "Hub":
-            self._attr_icon = "mdi:hub"
+        self._attr_icon = CONNECTION_TYPE[connection]
