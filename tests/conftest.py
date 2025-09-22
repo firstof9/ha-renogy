@@ -198,3 +198,56 @@ def mock_coord():
     ) as mock_value:
         mock_value.return_value = DUPE_SERIAL
         yield
+
+
+@pytest.fixture(name="mock_api_error")
+def mock_api_error(mock_aioclient):
+    """Fixure to mock API calls."""
+    mock_aioclient.get(
+        BASE_URL + DEVICE_LIST,
+        status=200,
+        body=load_fixture("device_list.json"),
+        repeat=True,
+    )
+    mock_aioclient.get(
+        f"{BASE_URL}/device/data/latest/1234567890",
+        status=200,
+        body="",
+        repeat=True,
+    )
+    mock_aioclient.get(
+        f"{BASE_URL}/device/data/latest/12345678901",
+        status=200,
+        body=load_fixture("realtime_data_inverter.json"),
+        repeat=True,
+    )
+    mock_aioclient.get(
+        f"{BASE_URL}/device/data/latest/12345678902",
+        status=200,
+        body=load_fixture("realtime_data_error.json"),
+        repeat=True,
+    )
+    mock_aioclient.get(
+        f"{BASE_URL}/device/data/latest/12345678903",
+        status=200,
+        body=load_fixture("realtime_data.json"),
+        repeat=True,
+    )
+    mock_aioclient.get(
+        f"{BASE_URL}/device/datamap/12345678903",
+        status=200,
+        body=load_fixture("datamap.json"),
+        repeat=True,
+    )
+    mock_aioclient.get(
+        f"{BASE_URL}/device/datamap/12345678902",
+        status=200,
+        body=load_fixture("datamap2.json"),
+        repeat=True,
+    )
+    mock_aioclient.get(
+        f"{BASE_URL}/device/datamap/12345678901",
+        status=200,
+        body=load_fixture("datamap3.json"),
+        repeat=True,
+    )
