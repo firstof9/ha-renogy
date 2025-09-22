@@ -218,7 +218,7 @@ def mock_api_error(mock_aioclient):
     mock_aioclient.get(
         f"{BASE_URL}/device/data/latest/12345678901",
         status=200,
-        body=load_fixture("realtime_data_inverter.json"),
+        body=load_fixture("realtime_data_inverter_error.json"),
         repeat=True,
     )
     mock_aioclient.get(

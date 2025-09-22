@@ -91,7 +91,7 @@ async def test_sensors_error(hass, mock_api_error, caplog):
         assert state.state == "RS485"
         state = hass.states.get("sensor.inverter_output")
         assert state
-        assert state.state == "Normal"
+        assert state.state == "unknown"
         state = hass.states.get("sensor.rng_ctrl_rvr40_connection_type")
         assert state
         assert state.state == "Bluetooth"

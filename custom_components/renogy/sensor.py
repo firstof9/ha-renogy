@@ -117,10 +117,7 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
                 except KeyError:
                     value = None
             else:
-                try:
-                    value = data[self._type][0]
-                except KeyError:
-                    value = None
+                value = data[self._type][0]
             self._state = value
         _LOGGER.debug("Sensor [%s] updated value: %s", self._type, self._state)
         return self._state
