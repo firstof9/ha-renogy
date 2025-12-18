@@ -109,16 +109,7 @@ async def async_remove_config_entry_device(  # pylint: disable-next=unused-argum
 ) -> bool:
     """Remove config entry from a device if its no longer present."""
     if not hasattr(config_entry, "runtime_data"):
-        return all(
-            await asyncio.gather(
-                *[
-                    hass.config_entries.async_forward_entry_unload(
-                        config_entry, platform
-                    )
-                    for platform in PLATFORMS
-                ]
-            )
-        )
+        return True
     return not any(
         identifier
         for identifier in device_entry.identifiers
