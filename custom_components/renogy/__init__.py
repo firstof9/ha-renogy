@@ -108,7 +108,7 @@ async def async_remove_config_entry_device(  # pylint: disable-next=unused-argum
     hass: HomeAssistant, config_entry: ConfigEntry, device_entry: dr.DeviceEntry
 ) -> bool:
     """Remove config entry from a device if its no longer present."""
-    if "runtime_data" not in config_entry:
+    if not hasattr(config_entry, "runtime_data"):
         return all(
             await asyncio.gather(
                 *[
