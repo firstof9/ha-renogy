@@ -119,13 +119,12 @@ async def async_remove_config_entry_device(  # pylint: disable-next=unused-argum
                 ]
             )
         )
-    else:
-        return not any(
-            identifier
-            for identifier in device_entry.identifiers
-            if identifier[0] == DOMAIN
-            and config_entry.runtime_data.get_device(identifier[1])
-        )
+    return not any(
+        identifier
+        for identifier in device_entry.identifiers
+        if identifier[0] == DOMAIN
+        and config_entry.runtime_data.get_device(identifier[1])
+    )
 
 
 async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
