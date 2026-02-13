@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.helpers import config_validation as cv
+
 from renogyapi import Renogy as api
 from renogyapi.exceptions import (
     NoDevices,
@@ -16,14 +17,32 @@ from renogyapi.exceptions import (
     UrlNotFound,
 )
 
-from .const import CONF_ACCESS_KEY, CONF_NAME, CONF_SECRET_KEY, DEFAULT_NAME, DOMAIN
+from .const import (
+    CONF_ACCESS_KEY,
+    CONF_CONNECTION_TYPE,
+    CONF_DEVICE_ID,
+    CONF_DEVICE_TYPE,
+    CONF_MAC_ADDRESS,
+    CONF_NAME,
+    CONF_SECRET_KEY,
+    CONNECTION_TYPE_BLE,
+    CONNECTION_TYPE_CLOUD,
+    DEFAULT_BLE_NAME,
+    DEFAULT_DEVICE_ID,
+    DEFAULT_NAME,
+    DOMAIN,
+)
+
+if TYPE_CHECKING:
+    from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 
 _LOGGER = logging.getLogger(__name__)
 
+DEVICE_TYPES = ["controller", "battery", "inverter"]
 
-@config_entries.HANDLERS.register(DOMAIN)
-class OpenEVSEFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
-    """Config flow for KeyMaster."""
+
+class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
+    """Config flow for Renogy."""
 
     VERSION = 1
     DEFAULTS = {CONF_NAME: DEFAULT_NAME}
@@ -33,11 +52,114 @@ class OpenEVSEFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self._errors = {}
         self._data = {}
         self._entry = {}
+        self._discovered_device: BluetoothServiceInfoBleak | None = None
+
+    # ------------------------------------------------------------------
+    # Step 1: Choose connection type (manual setup)
+    # ------------------------------------------------------------------
 
     async def async_step_user(
         self, user_input: Dict[str, Any] = None
     ) -> Dict[str, Any]:
         """Handle a flow initialized by the user."""
+        if user_input is not None:
+            connection_type = user_input.get(CONF_CONNECTION_TYPE)
+            self._data[CONF_CONNECTION_TYPE] = connection_type
+
+            if connection_type == CONNECTION_TYPE_BLE:
+                return await self.async_step_ble()
+            return await self.async_step_cloud()
+
+        return self.async_show_form(
+            step_id="user",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_CONNECTION_TYPE, default=CONNECTION_TYPE_CLOUD
+                    ): vol.In(
+                        {
+                            CONNECTION_TYPE_CLOUD: "Cloud API",
+                            CONNECTION_TYPE_BLE: "Bluetooth (BLE)",
+                        }
+                    ),
+                }
+            ),
+        )
+
+    # ------------------------------------------------------------------
+    # Bluetooth auto-discovery
+    # ------------------------------------------------------------------
+
+    async def async_step_bluetooth(
+        self, discovery_info: BluetoothServiceInfoBleak
+    ) -> Dict[str, Any]:
+        """Handle a Bluetooth discovery."""
+        _LOGGER.debug(
+            "Discovered Renogy BLE device: %s (%s)",
+            discovery_info.name,
+            discovery_info.address,
+        )
+
+        await self.async_set_unique_id(discovery_info.address)
+        self._abort_if_unique_id_configured()
+
+        self._discovered_device = discovery_info
+        self.context["title_placeholders"] = {
+            "name": discovery_info.name or "Renogy BLE Device"
+        }
+
+        return await self.async_step_bluetooth_confirm()
+
+    async def async_step_bluetooth_confirm(
+        self, user_input: Dict[str, Any] = None
+    ) -> Dict[str, Any]:
+        """Confirm Bluetooth discovery and configure device."""
+        self._errors = {}
+
+        if user_input is not None:
+            if self._discovered_device is None:
+                return self.async_abort(reason="discovery_device_missing")
+            mac_address = self._discovered_device.address.upper()
+
+            data = {
+                CONF_CONNECTION_TYPE: CONNECTION_TYPE_BLE,
+                CONF_NAME: user_input.get(
+                    CONF_NAME,
+                    self._discovered_device.name or DEFAULT_BLE_NAME,
+                ),
+                CONF_MAC_ADDRESS: mac_address,
+                CONF_DEVICE_TYPE: user_input.get(CONF_DEVICE_TYPE, "controller"),
+                CONF_DEVICE_ID: user_input.get(CONF_DEVICE_ID, DEFAULT_DEVICE_ID),
+            }
+            return self.async_create_entry(title=data[CONF_NAME], data=data)
+
+        if self._discovered_device is None:
+            return self.async_abort(reason="discovery_device_missing")
+        device_name = self._discovered_device.name or DEFAULT_BLE_NAME
+
+        return self.async_show_form(
+            step_id="bluetooth_confirm",
+            data_schema=_get_ble_schema(
+                defaults={
+                    CONF_NAME: device_name,
+                    CONF_MAC_ADDRESS: self._discovered_device.address,
+                    CONF_DEVICE_TYPE: "controller",
+                    CONF_DEVICE_ID: DEFAULT_DEVICE_ID,
+                },
+                show_mac=False,
+            ),
+            description_placeholders={"name": device_name},
+            errors=self._errors,
+        )
+
+    # ------------------------------------------------------------------
+    # Step 2a: Cloud API configuration
+    # ------------------------------------------------------------------
+
+    async def async_step_cloud(
+        self, user_input: Dict[str, Any] = None
+    ) -> Dict[str, Any]:
+        """Handle cloud API configuration step."""
         self._errors = {}
 
         if user_input is not None:
@@ -45,7 +167,6 @@ class OpenEVSEFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 secret_key=user_input[CONF_SECRET_KEY],
                 access_key=user_input[CONF_ACCESS_KEY],
             )
-            # Test connection
             try:
                 await renogy.get_devices()
             except NoDevices:
@@ -69,33 +190,94 @@ class OpenEVSEFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 self._errors[CONF_NAME] = "general"
 
             if not self._errors:
+                data = {
+                    **self._data,
+                    **user_input,
+                }
                 return self.async_create_entry(
-                    title=user_input[CONF_NAME], data=user_input
+                    title=user_input.get(CONF_NAME, DEFAULT_NAME), data=data
                 )
 
-        return await self._show_config_form(user_input)
-
-    async def _show_config_form(self, user_input):
-        """Show the configuration form."""
+        defaults = self.DEFAULTS
         return self.async_show_form(
-            step_id="user",
-            data_schema=_get_schema(user_input, self.DEFAULTS),
+            step_id="cloud",
+            data_schema=_get_cloud_schema(user_input, defaults),
             errors=self._errors,
         )
+
+    # ------------------------------------------------------------------
+    # Step 2b: BLE configuration (manual)
+    # ------------------------------------------------------------------
+
+    async def async_step_ble(self, user_input: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Handle BLE configuration step."""
+        self._errors = {}
+
+        if user_input is not None:
+            mac_address = user_input.get(CONF_MAC_ADDRESS, "").strip().upper()
+
+            # Validation
+            is_valid = True
+            if len(mac_address) != 17 or mac_address[2] != ":" or mac_address[5] != ":":
+                is_valid = False
+            else:
+                try:
+                    int(mac_address.replace(":", ""), 16)
+                except ValueError:
+                    is_valid = False
+
+            if not is_valid:
+                self._errors[CONF_MAC_ADDRESS] = "invalid_mac"
+            else:
+                await self.async_set_unique_id(mac_address)
+                self._abort_if_unique_id_configured()
+
+                data = {
+                    **self._data,
+                    **user_input,
+                    CONF_MAC_ADDRESS: mac_address,
+                }
+                title = user_input.get(CONF_NAME, DEFAULT_BLE_NAME)
+                return self.async_create_entry(title=title, data=data)
+
+        return self.async_show_form(
+            step_id="ble",
+            data_schema=_get_ble_schema(
+                defaults={
+                    CONF_NAME: DEFAULT_BLE_NAME,
+                    CONF_DEVICE_TYPE: "controller",
+                    CONF_DEVICE_ID: DEFAULT_DEVICE_ID,
+                },
+                show_mac=True,
+            ),
+            errors=self._errors,
+        )
+
+    # ------------------------------------------------------------------
+    # Reconfigure
+    # ------------------------------------------------------------------
 
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None):
         """Add reconfigure step to allow to reconfigure a config entry."""
         self._entry = self._get_reconfigure_entry()
-        assert self._entry
+        if not self._entry:
+            return self.async_abort(reason="reconfigure_entry_missing")
         self._data = dict(self._entry.data)
         self._errors = {}
 
+        connection_type = self._data.get(CONF_CONNECTION_TYPE, CONNECTION_TYPE_CLOUD)
+
+        if connection_type == CONNECTION_TYPE_BLE:
+            return await self._reconfigure_ble(user_input)
+        return await self._reconfigure_cloud(user_input)
+
+    async def _reconfigure_cloud(self, user_input: dict[str, Any] | None = None):
+        """Reconfigure cloud API settings."""
         if user_input is not None:
             renogy = api(
                 secret_key=user_input[CONF_SECRET_KEY],
                 access_key=user_input[CONF_ACCESS_KEY],
             )
-            # Test connection
             try:
                 await renogy.get_devices()
             except NoDevices:
@@ -124,21 +306,52 @@ class OpenEVSEFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     self._entry,
                     data_updates=user_input,
                 )
-        return await self._show_reconfig_form(user_input)
 
-    async def _show_reconfig_form(self, user_input):
-        """Show the configuration form to edit configuration data."""
         return self.async_show_form(
             step_id="reconfigure",
-            data_schema=_get_schema(user_input, self._data),
+            data_schema=_get_cloud_schema(user_input, self._data),
+            errors=self._errors,
+        )
+
+    async def _reconfigure_ble(self, user_input: dict[str, Any] | None = None):
+        """Reconfigure BLE settings."""
+        if user_input is not None:
+            mac_address = user_input.get(CONF_MAC_ADDRESS, "").strip().upper()
+
+            # Basic validation: 17 chars, correct separators
+            if len(mac_address) != 17 or mac_address[2] != ":" or mac_address[5] != ":":
+                self._errors[CONF_MAC_ADDRESS] = "invalid_mac"
+            else:
+                # Check for valid hex chars
+                try:
+                    int(mac_address.replace(":", ""), 16)
+                    user_input[CONF_MAC_ADDRESS] = mac_address
+                    _LOGGER.debug("%s BLE reconfigured.", DOMAIN)
+                    return self.async_update_reload_and_abort(
+                        self._entry,
+                        data_updates=user_input,
+                    )
+                except ValueError:
+                    self._errors[CONF_MAC_ADDRESS] = "invalid_mac"
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=_get_ble_schema(
+                defaults={
+                    CONF_NAME: self._data.get(CONF_NAME, DEFAULT_BLE_NAME),
+                    CONF_MAC_ADDRESS: self._data.get(CONF_MAC_ADDRESS, ""),
+                    CONF_DEVICE_TYPE: self._data.get(CONF_DEVICE_TYPE, "controller"),
+                    CONF_DEVICE_ID: self._data.get(CONF_DEVICE_ID, DEFAULT_DEVICE_ID),
+                },
+                show_mac=True,
+            ),
             errors=self._errors,
         )
 
 
-def _get_schema(  # pylint: disable-next=unused-argument
+def _get_cloud_schema(
     user_input: Optional[Dict[str, Any]],
     default_dict: Dict[str, Any],
-    # pylint: disable-next=unused-argument
 ) -> vol.Schema:
     """Get a schema using the default_dict as a backup."""
     if user_input is None:
@@ -161,3 +374,45 @@ def _get_schema(  # pylint: disable-next=unused-argument
             ): cv.string,
         },
     )
+
+
+def _get_ble_schema(
+    defaults: Dict[str, Any],
+    show_mac: bool = True,
+) -> vol.Schema:
+    """Build the BLE configuration schema.
+
+    Args:
+        defaults: Default values for each field.
+        show_mac: Whether to include the MAC address field.
+                  False for auto-discovery (MAC is already known).
+    """
+    schema_dict: dict[vol.Marker, Any] = {
+        vol.Optional(
+            CONF_NAME, default=defaults.get(CONF_NAME, DEFAULT_BLE_NAME)
+        ): cv.string,
+    }
+
+    if show_mac:
+        schema_dict[
+            vol.Required(
+                CONF_MAC_ADDRESS,
+                default=defaults.get(CONF_MAC_ADDRESS, ""),
+            )
+        ] = cv.string
+
+    schema_dict[
+        vol.Required(
+            CONF_DEVICE_TYPE,
+            default=defaults.get(CONF_DEVICE_TYPE, "controller"),
+        )
+    ] = vol.In(DEVICE_TYPES)
+
+    schema_dict[
+        vol.Optional(
+            CONF_DEVICE_ID,
+            default=defaults.get(CONF_DEVICE_ID, DEFAULT_DEVICE_ID),
+        )
+    ] = cv.positive_int
+
+    return vol.Schema(schema_dict)
