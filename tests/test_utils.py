@@ -114,3 +114,40 @@ async def test_format_mac_address():
 
     with pytest.raises(ValueError):
         format_mac_address("invalid")
+"""Test detailed coverage for ble_utils.py."""
+import pytest
+from custom_components.renogy.ble_utils import (
+    bytes_to_int,
+    validate_modbus_response,
+)
+
+def test_bytes_to_int_coverage():
+    """Test bytes_to_int edge cases."""
+    
+    # Test length 4 signed
+    # Max positive signed 32-bit: 2147483647 (0x7FFFFFFF)
+    # Negative: -1 (0xFFFFFFFF)
+    data = b"\xFF\xFF\xFF\xFF"
+    val = bytes_to_int(data, 0, 4, signed=True)
+    assert val == -1
+    
+    # Test unsupported length
+    assert bytes_to_int(data, 0, 3) == 0
+    assert bytes_to_int(data, 0, 5) == 0
+
+
+def test_validate_modbus_response_coverage():
+    """Test validate_modbus_response edge cases."""
+    
+    # Error response (Function code & 0x80)
+    # [ID, Func|0x80, ErrorCode, CRC_L, CRC_H]
+    # 0x83 = 0x03 | 0x80
+    data = b"\x01\x83\x02\xC0\xF1" 
+    assert validate_modbus_response(data) is False
+    
+    # Incomplete response based on byte count
+    # [ID, Func, ByteCount, Data..., CRC_L, CRC_H]
+    # ByteCount = 4, but we only provide 2 bytes of data
+    # Length should be 3 (head) + 4 (data) + 2 (crc) = 9
+    data = b"\x01\x03\x04\x00\x00" # Length 5
+    assert validate_modbus_response(data) is False
