@@ -433,3 +433,445 @@ def test_get_registers_for_device_unknown():
     """Test get_registers_for_device with unknown type."""
     result = get_registers_for_device("UNKNOWN")
     assert result == []
+
+
+"""Deep coverage tests for ble_parsers.py."""
+import pytest
+from custom_components.renogy.ble_parsers import (
+    parse_controller_battery_type,
+    parse_controller_faults,
+    parse_controller_historical,
+    parse_controller_device_info,
+    parse_controller_device_id,
+    parse_controller_charging_info,
+)
+
+
+def create_buffer(length, offset=3):
+    return bytearray([0] * (length + offset))
+
+
+def test_parse_controller_battery_type_short():
+    """Test short data for battery type."""
+    assert parse_controller_battery_type(b"\x00" * 3) == {}
+
+
+def test_parse_controller_faults_bits():
+    """Test fault parsing with specific bits."""
+    offset = 3
+    data = create_buffer(4, offset)
+
+    # Needs 4 bytes of data (High Word, Low Word)
+    # High Word: data[offset], data[offset+1]
+    # Low Word: data[offset+2], data[offset+3]
+
+    # Set bit 30 (charge_mos_short_circuit) -> 0x40000000
+    # High word: 0x4000
+    data[offset] = 0x40
+    data[offset + 1] = 0x00
+
+    # Set bit 18 (battery_undervoltage warning) -> 0x00040000
+    # High word: 0x0004 -> data[offset+1] |= 0x04
+    data[offset + 1] |= 0x04
+
+    result = parse_controller_faults(bytes(data))
+
+    assert "charge_mos_short_circuit" in result["faults"]
+    assert "battery_undervoltage" in result["warnings"]
+    assert result["fault_count"] == 1
+    assert result["warning_count"] == 1
+
+
+def test_parse_controller_historical_short():
+    """Test historical data short."""
+    # Needs 42 bytes + offset
+    assert parse_controller_historical(b"\x00" * 40) == {}
+
+
+def test_parse_controller_device_info_short():
+    """Test device info short."""
+    # registers 0x000A - 0x0011 (8 registers = 16 bytes)
+    # limit check is likely around 16
+    assert parse_controller_device_info(b"\x00" * 10) == {}
+
+
+def test_parse_controller_device_id_short():
+    """Test device id short."""
+    # registers 0x001A (1 register = 2 bytes)
+    assert parse_controller_device_id(b"\x00" * 3) == {}
+
+
+def test_parse_controller_charging_info_short():
+    """Test charging info short."""
+    # registers 0x0100 -> many
+    assert parse_controller_charging_info(b"\x00" * 20) == {}
+
+
+"""Final coverage tests for ble_parsers.py."""
+import pytest
+from custom_components.renogy.ble_parsers import (
+    parse_controller_charging_info,
+    parse_battery_cell_info,
+    parse_battery_temp_info,
+    parse_battery_info,
+    parse_battery_alarm_info,
+    parse_battery_device_info,
+    parse_inverter_main_status,
+    parse_inverter_device_info,
+    parse_inverter_pv_info,
+    parse_inverter_settings_status,
+    parse_inverter_statistics,
+    parse_inverter_settings,
+)
+
+
+def create_buffer(length, offset=3):
+    return bytearray([0] * (length + offset))
+
+
+# =================================================================================
+# Controller Tests
+# =================================================================================
+
+
+def test_parse_controller_charging_info_branches():
+    """Test branches in parse_controller_charging_info."""
+    offset = 3
+    # 1. Short data
+    assert parse_controller_charging_info(b"\x00" * 60) == {}
+
+    # 2. Unknown status & Partial faults
+    # Need length >= 68 for basic, 70 for full faults
+    # We provide exactly 68 + offset = 71 bytes to hit 'elif len >= 68' ?
+    # Wait:
+    # if len >= offset + 70: 4 bytes faults
+    # elif len >= offset + 68: 2 bytes faults
+
+    # Let's test Partial Faults branch (Length = offset + 69)
+    # 3 + 69 = 72 bytes total? No, index is offset+68.
+    # Buffer len = offset + 69
+    data = create_buffer(69, offset)
+
+    # Set charging_status (offset + 65) to unknown (e.g. 99)
+    data[offset + 65] = 99
+
+    # Set load_status (offset + 64) -> extract bit 7. 0 or 1.
+    # If byte is 0x80 -> bit 7 is 1 -> "on"
+    # If byte is 0x00 -> bit 7 is 0 -> "off"
+    # To get unknown, dict only has 0 and 1. So likely never unknown unless we change dict.
+
+    result = parse_controller_charging_info(bytes(data))
+
+    assert result["charging_status"] == "unknown"
+    # Should have hit partial faults branch
+    assert "controller_faults" in result
+    # We can check specific values if we set them, but coverage just needs the line hit
+
+    # 3. Full faults branch
+    data_full = create_buffer(70, offset)
+    result_full = parse_controller_charging_info(bytes(data_full))
+    assert "controller_faults" in result_full
+
+
+# =================================================================================
+# Battery Tests
+# =================================================================================
+
+
+def test_parse_battery_short_data():
+    """Test short data returns for battery parsers."""
+    assert parse_battery_cell_info(b"\x00" * 3) == {}
+    assert parse_battery_temp_info(b"\x00" * 3) == {}
+    assert parse_battery_info(b"\x00" * 10) == {}
+    expected_empty_alarm = {
+        "cell_voltage_alarms": [],
+        "cell_temperature_alarms": [],
+        "protection_alarms": [],
+        "warnings": [],
+        "alarm_count": 0,
+        "warning_count": 0,
+    }
+    assert parse_battery_alarm_info(b"\x00" * 10) == expected_empty_alarm
+    assert parse_battery_device_info(b"\x00" * 10) == {}
+
+
+def test_parse_battery_info_logic():
+    """Test logic in parse_battery_info."""
+    offset = 3
+    data = create_buffer(12, offset)
+
+    # Total capacity (offset+8, 4 bytes)
+    # Set to 0 to test 'if total_capacity > 0' else branch
+    data[offset + 8] = 0
+    data[offset + 9] = 0
+    data[offset + 10] = 0
+    data[offset + 11] = 0
+
+    result = parse_battery_info(bytes(data))
+    assert result["soc"] == 0
+
+    # Set total capacity > 0
+    data[offset + 11] = 100  # 100 * 0.001 = 0.1
+    # Remaining (offset+4) = 50 -> 0.05
+    data[offset + 7] = 50
+
+    result = parse_battery_info(bytes(data))
+    # 0.05 / 0.1 * 100 = 50.0
+    assert result["soc"] == 50.0
+
+
+def test_parse_battery_alarm_info_coverage():
+    """Test detailed alarm parsing."""
+    offset = 3
+    data = create_buffer(20, offset)
+
+    # Cell voltage alarms (offset+0, 4 bytes)
+    # Set cell 1 to 1 (undervoltage), cell 2 to 2 (overvoltage), cell 3 to 3 (alarm)
+    # bytes_to_int(data, offset, 4) parses as big-endian
+    # data[offset] is highest byte -> bits 24-31 (Cells 13-16 if we map naively? No)
+    # The code: alarm_code = (cell_voltage_alarm >> (cell * 2)) & 0x03
+    # Cell 0 (Cell 1) is bits 0-1.
+    # In a big-endian 32-bit int, bits 0-1 are the LOWEST bits, which come from the LAST byte (data[offset+3])
+
+    # So we need to set data[offset+3]
+    # Cell 1 (bits 0-1) = 1 (01)
+    # Cell 2 (bits 2-3) = 2 (10)
+    # Cell 3 (bits 4-5) = 3 (11)
+    # Binary: 00 11 10 01 -> 0x39
+    data[offset + 3] = 0x39
+
+    # Status1 (offset+12, 2 bytes) -> short_circuit (bit 0)
+    # 2 bytes big endian. Bit 0 is lowest bit -> data[offset+13]
+    data[offset + 13] = 0x01
+
+    # Status2 (offset+14, 2 bytes) -> effective_charge (bit 15)
+    # Bit 15 is highest bit -> data[offset+14]
+    data[offset + 14] = 0x80
+
+    # Status3 (offset+16, 2 bytes) -> cell_low_voltage (bit 0)
+    # Bit 0 is lowest bit -> data[offset+17]
+    data[offset + 17] = 0x01
+
+    result = parse_battery_alarm_info(bytes(data))
+
+    assert "cell_1_undervoltage" in result["cell_voltage_alarms"]
+    assert "cell_2_overvoltage" in result["cell_voltage_alarms"]
+    assert "cell_3_alarm" in result["cell_voltage_alarms"]
+    assert "short_circuit" in result["protection_alarms"]
+    assert result["effective_charge"] is True
+    assert "cell_low_voltage" in result["warnings"]
+
+
+# =================================================================================
+# Inverter Tests
+# =================================================================================
+
+
+def test_parse_inverter_short_data():
+    """Test short data for inverter parsers."""
+    assert parse_inverter_main_status(b"\x00" * 10) == {}
+    assert parse_inverter_device_info(b"\x00" * 40) == {}
+    assert parse_inverter_pv_info(b"\x00" * 10) == {}
+    assert parse_inverter_settings_status(b"\x00" * 10) == {}
+    # parse_inverter_settings_status has multiple ifs
+    assert parse_inverter_statistics(b"\x00" * 5) == {}
+    assert parse_inverter_settings(b"\x00" * 5) == {}
+
+
+def test_parse_inverter_main_status_logic():
+    """Test logic in parse_inverter_main_status."""
+    offset = 3
+    data = create_buffer(20, offset)
+
+    # Safe value check: input_v_raw (offset) >= 65000
+    data[offset] = 0xFF
+    data[offset + 1] = 0xFF  # 65535
+
+    # Calc power branch: input_v > 0 and input_c > 0
+    # Set input_c (offset+2) to 100
+    data[offset + 2] = 0x00
+    data[offset + 3] = 0x64
+
+    # Faults (offset+18 needed)
+    # High faults (offset+14) -> input_uvp (bit 15)
+    data[offset + 14] = 0x80
+
+    result = parse_inverter_main_status(bytes(data))
+
+    assert result["input_voltage"] == 0.0  # because >= 65000
+    assert result["input_power"] == 0.0  # because voltage is 0
+    assert "input_uvp" in result["faults"]
+
+    # Input freq (offset+18)
+    # We provided 20 bytes, so it should read input_freq
+    assert "input_frequency" in result
+
+
+def test_parse_inverter_pv_info_branches():
+    """Test branches in parse_inverter_pv_info."""
+    offset = 3
+    # Length >= 12 checks
+    data = create_buffer(12, offset)
+
+    # Charging status (offset+10) -> unknown
+    data[offset + 10] = 0x00
+    data[offset + 11] = 99
+
+    result = parse_inverter_pv_info(bytes(data))
+    assert result["charging_status"] == "unknown"
+
+
+def test_parse_inverter_settings_status_branches():
+    """Test intermediate length checks."""
+    offset = 3
+    # 1. < 16 (but guard is at 30, so anything < 30 returns empty)
+    assert parse_inverter_settings_status(create_buffer(10, offset)) == {}
+
+    # 2. >= 32 (Full data)
+    res = parse_inverter_settings_status(create_buffer(32, offset))
+    assert "machine_state" in res
+    assert "bus_voltage" in res
+    assert "load_current" in res
+    assert "load_percentage" in res
+
+
+def test_parse_inverter_statistics_branches():
+    """Test branches in parse_inverter_statistics."""
+    offset = 3
+    # 1. >= 10 but < 30
+    res = parse_inverter_statistics(create_buffer(10, offset))
+    assert "battery_charge_ah_today" in res
+    assert "battery_charge_ah_total" not in res
+
+    # 2. >= 30
+    res = parse_inverter_statistics(create_buffer(30, offset))
+    assert "battery_charge_ah_total" in res
+
+
+"""Refinement coverage tests for ble_parsers.py."""
+import logging
+from unittest.mock import patch, MagicMock
+from custom_components.renogy.ble_parsers import (
+    parse_battery_alarm_info,
+    parse_inverter_main_status,
+    parse_response,
+    DeviceType,
+)
+
+
+def create_buffer(length, offset=3):
+    return bytearray([0] * (length + offset))
+
+
+def test_parse_battery_alarm_more_coverage():
+    """Cover remaining alarm branches."""
+    offset = 3
+    data = create_buffer(20, offset)
+
+    # Cell Temp Alarms (offset+4, 4 bytes)
+    # Cell 1 (bits 0-1) -> 1 (undertemp)
+    # data[offset+7] is low byte
+    data[offset + 7] = 0x01
+
+    # Other Alarms (offset+8, 4 bytes)
+    # bms_board_temp (bits 0-1) -> 1 (low)
+    # data[offset+11] is low byte
+    data[offset + 11] = 0x01
+
+    # Warnings (offset+16, 2 bytes)
+    # cell_11_voltage_error -> bit 8 -> (index 0 of range(8) loop starting at bit 8)
+    # Actually code:
+    # for i in range(8): if status3 & (1 << (8 + i)): ...
+    # i=0 -> bit 8.
+    # Status3 is offset+16 (high), offset+17 (low).
+    # Bit 8 is the lowest bit of the high byte -> data[offset+16] & 0x01
+    data[offset + 16] = 0x01
+
+    result = parse_battery_alarm_info(bytes(data))
+
+    assert "cell_1_undertemp" in result["cell_temperature_alarms"]
+    assert "bms_board_temp_low" in result["protection_alarms"]
+    assert "cell_11_voltage_error" in result["warnings"]
+
+
+def test_parse_inverter_main_status_low_faults_and_power():
+    """Cover low faults loop and input power calc."""
+    offset = 3
+    data = create_buffer(20, offset)
+
+    # Input Voltage: 120.0 V -> 1200 -> 0x04B0
+    data[offset] = 0x04
+    data[offset + 1] = 0xB0
+
+    # Input Current: 1.0 A -> 100 -> 0x0064
+    data[offset + 2] = 0x00
+    data[offset + 3] = 0x64
+
+    # Low Faults (offset+16, 2 bytes)
+    # utility_fail (bit 15) -> 0x8000
+    # High byte (offset+16) -> 0x80
+    data[offset + 16] = 0x80
+
+    result = parse_inverter_main_status(bytes(data))
+
+    assert "utility_fail" in result["faults"]
+    assert result["input_power"] == 120.0
+
+
+def test_parse_response_debug_log():
+    """Test debug log in parse_response."""
+    with patch("custom_components.renogy.ble_parsers._LOGGER") as mock_logger:
+        # Valid parsing
+        data = create_buffer(16, 3)  # Enough for device_id (needs 2)
+        data[3] = 1  # valid val
+
+        parse_response(DeviceType.CONTROLLER, 26, bytes(data))
+
+        # Verify debug called
+        # _LOGGER.debug("Parsed %s register %s: %s", ...)
+        assert mock_logger.debug.called
+
+
+"""Final refinement coverage tests for ble_parsers.py."""
+import pytest
+from custom_components.renogy.ble_parsers import parse_battery_alarm_info
+
+
+def create_buffer(length, offset=3):
+    return bytearray([0] * (length + offset))
+
+
+def test_parse_battery_alarm_remaining_variants():
+    """Cover remaining alarm code variants 2 and 3."""
+    offset = 3
+    data = create_buffer(20, offset)
+
+    # cell_temp_alarm (offset + 4, 4 bytes)
+    # Cell 1 (bits 0-1) -> 2 (overtemp)
+    # Cell 2 (bits 2-3) -> 3 (temp_alarm)
+    # data[offset+7] is low byte
+    # Bits 0-3: 11 10 -> 0x0E
+    data[offset + 7] = 0x0E
+
+    # other_alarm (offset + 8, 4 bytes)
+    # bms_board_temp (bits 0-1) -> code variant already test?
+    # Let's set different positions to be sure.
+    # bms_board_temp is checked twice (pos 0 and 2)?
+    # Register 5104-5105 bits mapping:
+    # bit 0-1: name1, bit 2-3: name1 (again?), etc.
+    # Wait, the parser loop:
+    # 382: ("bms_board_temp", 0),
+    # 383: ("bms_board_temp", 2),
+    # This might be how it's defined in the protocol.
+
+    # Let's set variant 2 (high) for pos 0 and variant 3 (alarm) for pos 2
+    # Bits 0-3: 11 10 -> 0x0E
+    # data[offset+11] is low byte of 4-byte other_alarm
+    data[offset + 11] = 0x0E
+
+    result = parse_battery_alarm_info(bytes(data))
+
+    assert "cell_1_overtemp" in result["cell_temperature_alarms"]
+    assert "cell_2_temp_alarm" in result["cell_temperature_alarms"]
+    assert "bms_board_temp_high" in result["protection_alarms"]
+    assert "bms_board_temp_alarm" in result["protection_alarms"]
