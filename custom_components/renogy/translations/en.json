@@ -1,31 +1,64 @@
 {
-    "config": {
-      "error": {
-        "invalid_key": "One or both the keys are invalid. Please try again.",
-        "rate_limit": "Rate limit exceeded, please try again in a few minutes.",
-        "api_error": "An API error has occured. Please try again later.",
-        "no_devices": "The API returned no devices for your account.",
-        "general": "An unknown error has occured, please check your Home Assistant log file for details."
-      },
-      "step": {
-        "user": {
-          "data": {
-            "name": "Device Name",
-            "secret_key": "Secret Key",
-            "access_key": "Access Key"
-          },
-          "description": "Please enter your secret key and access key to poll the Renogy API.",
-          "title": "Renogy Setup"
+  "config": {
+    "error": {
+      "invalid_key": "One or both the keys are invalid. Please try again.",
+      "rate_limit": "Rate limit exceeded, please try again in a few minutes.",
+      "api_error": "An API error has occured. Please try again later.",
+      "no_devices": "The API returned no devices for your account.",
+      "invalid_mac": "Invalid MAC address. Please enter a valid Bluetooth MAC address.",
+      "general": "An unknown error has occured, please check your Home Assistant log file for details."
+    },
+    "step": {
+      "user": {
+        "data": {
+          "connection_type": "Connection Type"
         },
-        "reconfigure": {
-          "data": {
-            "name": "Device Name",
-            "secret_key": "Secret Key",
-            "access_key": "Access Key"
-          },
-          "description": "Please enter your secret key and access key to poll the Renogy API.",
-          "title": "Renogy Setup"
-        }
+        "description": "Choose how to connect to your Renogy device.",
+        "title": "Renogy Setup"
+      },
+      "cloud": {
+        "data": {
+          "name": "Device Name",
+          "secret_key": "Secret Key",
+          "access_key": "Access Key"
+        },
+        "description": "Please enter your secret key and access key to poll the Renogy API.",
+        "title": "Cloud API Setup"
+      },
+      "ble": {
+        "data": {
+          "name": "Device Name",
+          "mac_address": "MAC Address",
+          "device_type": "Device Type",
+          "device_id": "Device ID (Modbus)"
+        },
+        "description": "Enter your Renogy BT module's MAC address. You can find this in the Renogy app or by scanning for BLE devices with names starting with 'BT-TH'.",
+        "title": "Bluetooth Setup"
+      },
+      "bluetooth_confirm": {
+        "data": {
+          "name": "Device Name",
+          "device_type": "Device Type",
+          "device_id": "Device ID (Modbus)"
+        },
+        "description": "A Renogy BLE device '{name}' was discovered. Configure it below.",
+        "title": "Renogy Bluetooth Discovered"
+      },
+      "reconfigure": {
+        "data": {
+          "name": "Device Name",
+          "secret_key": "Secret Key",
+          "access_key": "Access Key",
+          "mac_address": "MAC Address",
+          "device_type": "Device Type",
+          "device_id": "Device ID (Modbus)"
+        },
+        "description": "Update your Renogy connection settings.",
+        "title": "Renogy Reconfigure"
       }
+    },
+    "abort": {
+      "already_configured": "This device is already configured."
     }
+  }
 }

@@ -12,7 +12,7 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import COORDINATOR, DOMAIN, SENSOR_TYPES
+from .const import BLE_SENSOR_TYPES, COORDINATOR, DOMAIN, SENSOR_TYPES
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -44,18 +44,21 @@ CONNECTION_TYPE = {
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    """Set up the OpenEVSE sensors."""
+    """Set up the Renogy sensors."""
     coordinator = hass.data[DOMAIN][entry.entry_id][COORDINATOR]
     sensors = []
+
+    all_sensor_types = {**SENSOR_TYPES, **BLE_SENSOR_TYPES}
+
     for device_id, device in coordinator.data.items():
-        for sensor in SENSOR_TYPES:  # pylint: disable=consider-using-dict-items
+        for sensor in all_sensor_types:  # pylint: disable=consider-using-dict-items
             if sensor in device.keys():  # pylint: disable=consider-using-dict-items
                 sensors.append(
-                    RenogySensor(SENSOR_TYPES[sensor], device_id, coordinator, entry)
+                    RenogySensor(all_sensor_types[sensor], device_id, coordinator, entry)
                 )
-            if sensor in device["data"].keys():
+            elif "data" in device and sensor in device["data"].keys():
                 sensors.append(
-                    RenogySensor(SENSOR_TYPES[sensor], device_id, coordinator, entry)
+                    RenogySensor(all_sensor_types[sensor], device_id, coordinator, entry)
                 )
 
     async_add_entities(sensors, False)

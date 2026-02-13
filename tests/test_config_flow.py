@@ -13,8 +13,14 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.renogy.const import (
     DOMAIN,
     CONF_ACCESS_KEY,
+    CONF_CONNECTION_TYPE,
+    CONF_DEVICE_ID,
+    CONF_DEVICE_TYPE,
+    CONF_MAC_ADDRESS,
     CONF_NAME,
     CONF_SECRET_KEY,
+    CONNECTION_TYPE_BLE,
+    CONNECTION_TYPE_CLOUD,
 )
 
 from .const import CONFIG_DATA
@@ -34,9 +40,10 @@ DEVICE_NAME = "Renogy Core"
                 "secret_key": "SuperSecretKey",
                 "access_key": "SuperSpecialAccessKey",
             },
-            "user",
+            "cloud",
             DEVICE_NAME,
             {
+                "connection_type": "cloud",
                 "name": DEVICE_NAME,
                 "secret_key": "SuperSecretKey",
                 "access_key": "SuperSpecialAccessKey",
@@ -58,8 +65,16 @@ async def test_form_user(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
     assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "user"
+
+    # Step 1: Select connection type
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"connection_type": "cloud"}
+    )
+    assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == step_id
 
+    # Step 2: Enter cloud credentials
     with patch(
         "custom_components.renogy.async_setup_entry",
         return_value=True,
@@ -149,7 +164,7 @@ async def test_form_reconfigure(
                 "secret_key": "SuperSecretKey",
                 "access_key": "SuperSpecialAccessKey",
             },
-            "user",
+            "cloud",
         ),
     ],
 )
@@ -163,6 +178,13 @@ async def test_form_user_no_devices(
     await setup.async_setup_component(hass, "persistent_notification", {})
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "user"
+
+    # Select cloud connection type
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"connection_type": "cloud"}
     )
     assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == step_id
@@ -240,7 +262,7 @@ async def test_form_reconfigure_no_devices(
                 "secret_key": "SuperSecretKey",
                 "access_key": "SuperSpecialAccessKey",
             },
-            "user",
+            "cloud",
         ),
     ],
 )
@@ -257,19 +279,19 @@ async def test_form_config_bad_auth(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
     assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "user"
+
+    # Select cloud connection type
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"connection_type": "cloud"}
+    )
+    assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == step_id
 
     with patch(
         "custom_components.renogy.async_setup_entry",
         return_value=True,
     ) as mock_setup_entry:
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], input
-        )
-
-        assert result["type"] is FlowResultType.FORM
-        assert result["step_id"] == step_id
-
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], input
         )
@@ -291,7 +313,7 @@ async def test_form_config_bad_auth(
                 "secret_key": "SuperSecretKey",
                 "access_key": "SuperSpecialAccessKey",
             },
-            "user",
+            "cloud",
         ),
     ],
 )
@@ -308,6 +330,13 @@ async def test_form_config_rate_limit(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
     assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "user"
+
+    # Select cloud connection type
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"connection_type": "cloud"}
+    )
+    assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == step_id
 
     with patch(
@@ -317,13 +346,6 @@ async def test_form_config_rate_limit(
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], input
         )
-        assert result["type"] is FlowResultType.FORM
-        assert result["step_id"] == step_id
-
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], input
-        )
-
         assert result["type"] is FlowResultType.FORM
         assert result["step_id"] == step_id
         assert result["errors"] == {CONF_NAME: "rate_limit"}
@@ -338,7 +360,7 @@ async def test_form_config_rate_limit(
                 "secret_key": "SuperSecretKey",
                 "access_key": "SuperSpecialAccessKey",
             },
-            "user",
+            "cloud",
         ),
     ],
 )
@@ -355,6 +377,13 @@ async def test_form_config_api_error(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
     assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "user"
+
+    # Select cloud connection type
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"connection_type": "cloud"}
+    )
+    assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == step_id
 
     with patch(
@@ -364,13 +393,6 @@ async def test_form_config_api_error(
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], input
         )
-        assert result["type"] is FlowResultType.FORM
-        assert result["step_id"] == step_id
-
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], input
-        )
-
         assert result["type"] is FlowResultType.FORM
         assert result["step_id"] == step_id
         assert result["errors"] == {CONF_NAME: "api_error"}
@@ -541,7 +563,7 @@ async def test_form_reconfigure_api_error(
                 "secret_key": "SuperSecretKey",
                 "access_key": "SuperSpecialAccessKey",
             },
-            "user",
+            "cloud",
         ),
     ],
 )
@@ -558,6 +580,13 @@ async def test_form_config_api_error(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
     assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "user"
+
+    # Select cloud connection type
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"connection_type": "cloud"}
+    )
+    assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == step_id
 
     with patch(
@@ -570,13 +599,6 @@ async def test_form_config_api_error(
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], input
         )
-        assert result["type"] is FlowResultType.FORM
-        assert result["step_id"] == step_id
-
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], input
-        )
-
         assert result["type"] is FlowResultType.FORM
         assert result["step_id"] == step_id
         assert result["errors"] == {CONF_NAME: "general"}
@@ -634,3 +656,143 @@ async def test_form_reconfigure_api_error(
         assert result["type"] is FlowResultType.FORM
         assert result["step_id"] == step_id
         assert result["errors"] == {CONF_NAME: "general"}
+
+
+# ==========================================================================
+# BLE config flow tests
+# ==========================================================================
+
+
+async def test_form_ble(hass):
+    """Test BLE config flow creates entry."""
+    await setup.async_setup_component(hass, "persistent_notification", {})
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "user"
+
+    # Step 1: Select BLE connection type
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"connection_type": "ble"}
+    )
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "ble"
+
+    # Step 2: Enter BLE config
+    with patch(
+        "custom_components.renogy.async_setup_entry",
+        return_value=True,
+    ) as mock_setup_entry:
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                "name": "My Solar Controller",
+                "mac_address": "AA:BB:CC:DD:EE:FF",
+                "device_type": "controller",
+                "device_id": 255,
+            },
+        )
+
+        assert result["type"] == FlowResultType.CREATE_ENTRY
+        assert result["title"] == "My Solar Controller"
+        assert result["data"] == {
+            "connection_type": "ble",
+            "name": "My Solar Controller",
+            "mac_address": "AA:BB:CC:DD:EE:FF",
+            "device_type": "controller",
+            "device_id": 255,
+        }
+
+        await hass.async_block_till_done()
+        assert len(mock_setup_entry.mock_calls) == 1
+
+
+async def test_form_bluetooth_discovery(hass):
+    """Test Bluetooth auto-discovery creates entry."""
+    from unittest.mock import MagicMock
+
+    await setup.async_setup_component(hass, "persistent_notification", {})
+
+    # Simulate a BluetoothServiceInfoBleak discovery
+    discovery_info = MagicMock()
+    discovery_info.name = "BT-TH-AABBCCDD"
+    discovery_info.address = "AA:BB:CC:DD:EE:FF"
+    discovery_info.rssi = -60
+    discovery_info.manufacturer_data = {}
+    discovery_info.service_data = {}
+    discovery_info.service_uuids = []
+    discovery_info.source = "local"
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": config_entries.SOURCE_BLUETOOTH},
+        data=discovery_info,
+    )
+
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "bluetooth_confirm"
+
+    with patch(
+        "custom_components.renogy.async_setup_entry",
+        return_value=True,
+    ) as mock_setup_entry:
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                "name": "BT-TH-AABBCCDD",
+                "device_type": "controller",
+                "device_id": 255,
+            },
+        )
+
+        assert result["type"] == FlowResultType.CREATE_ENTRY
+        assert result["title"] == "BT-TH-AABBCCDD"
+        assert result["data"] == {
+            "connection_type": "ble",
+            "name": "BT-TH-AABBCCDD",
+            "mac_address": "AA:BB:CC:DD:EE:FF",
+            "device_type": "controller",
+            "device_id": 255,
+        }
+
+        await hass.async_block_till_done()
+        assert len(mock_setup_entry.mock_calls) == 1
+
+
+async def test_bluetooth_discovery_already_configured(hass):
+    """Test Bluetooth discovery aborts when device is already configured."""
+    from unittest.mock import MagicMock
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="BT-TH-AABBCCDD",
+        data={
+            "connection_type": "ble",
+            "name": "BT-TH-AABBCCDD",
+            "mac_address": "AA:BB:CC:DD:EE:FF",
+            "device_type": "controller",
+            "device_id": 255,
+        },
+        unique_id="AA:BB:CC:DD:EE:FF",
+    )
+    entry.add_to_hass(hass)
+
+    discovery_info = MagicMock()
+    discovery_info.name = "BT-TH-AABBCCDD"
+    discovery_info.address = "AA:BB:CC:DD:EE:FF"
+    discovery_info.rssi = -60
+    discovery_info.manufacturer_data = {}
+    discovery_info.service_data = {}
+    discovery_info.service_uuids = []
+    discovery_info.source = "local"
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": config_entries.SOURCE_BLUETOOTH},
+        data=discovery_info,
+    )
+
+    assert result["type"] == FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+

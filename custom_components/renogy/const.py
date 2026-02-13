@@ -31,6 +31,16 @@ CONF_ACCESS_KEY = "access_key"
 CONF_NAME = "name"
 DEFAULT_NAME = "Renogy Core"
 
+# BLE config
+CONF_CONNECTION_TYPE = "connection_type"
+CONF_MAC_ADDRESS = "mac_address"
+CONF_DEVICE_TYPE = "device_type"
+CONF_DEVICE_ID = "device_id"
+CONNECTION_TYPE_CLOUD = "cloud"
+CONNECTION_TYPE_BLE = "ble"
+DEFAULT_DEVICE_ID = 255
+DEFAULT_BLE_NAME = "Renogy BLE"
+
 DOMAIN = "renogy"
 COORDINATOR = "coordinator"
 VERSION = "1.0.0"
@@ -41,6 +51,56 @@ PLATFORMS = [
 ]
 USER_AGENT = "Home Assistant"
 MANAGER = "manager"
+
+# Mapping from BLE parser keys to HA sensor keys
+BLE_TO_HA_KEY_MAP: Final[dict[str, str]] = {
+    # Controller
+    "battery_voltage": "batteryChargingVolts",
+    "battery_current": "batteryChargingAmps",
+    "battery_percentage": "soc",
+    "battery_temperature": "batteryTemperature",
+    "controller_temperature": "temperature",
+    "pv_voltage": "solarVolts",
+    "pv_current": "solarAmps",
+    "pv_power": "solarWatts",
+    "load_voltage": "loadVolts",
+    "load_current": "loadAmps",
+    "load_power": "loadWatts",
+    "power_generation_total": "totalKwhGenerated",
+    "battery_type": "batteryType",
+    "charging_status": "chargingStatus",
+    "load_status": "loadStatus",
+    # Battery
+    "voltage": "presentVolts",
+    "current": "presentAmps",
+    "remaining_capacity": "presentCapacity",
+    "total_capacity": "maximumCapacity",
+    "soc": "soc",
+    "power": "batteryPower",
+    "cell_count": "cellCount",
+    "cell_voltages": "cellVoltages",
+    "heater_on": "heatingModeStatus",
+    "charge_mosfet": "chargeMosfet",
+    "discharge_mosfet": "dischargeMosfet",
+    "alarm_count": "alarmCount",
+    "warning_count": "warningCount",
+    "alarms": "alarms",
+    "warnings": "warnings",
+    # Inverter
+    "input_voltage": "ueiVolts",
+    "input_current": "gridChargeAmps",
+    "output_voltage": "outputVolts",
+    "output_current": "outputAmps",
+    "output_frequency": "acOutputHz",
+    "output_power": "loadActiveWatts",
+    "temperature": "temperature",
+    "fault_count": "faultCount",
+    "faults": "faults",
+    "eco_mode": "ecoMode",
+    "model": "model",
+    "manufacturer": "manufacturer",
+    "firmware_version": "firmwareVersion",
+}
 
 
 BINARY_SENSORS: Final[dict[str, BinarySensorEntityDescription]] = {
@@ -463,5 +523,72 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLTAGE,
         suggested_display_precision=1,
+    ),
+}
+
+# Additional sensor descriptions for BLE-specific data points
+BLE_SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
+    "chargingStatus": SensorEntityDescription(
+        key="chargingStatus",
+        name="Charging Status",
+        icon="mdi:battery-charging",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    "loadStatus": SensorEntityDescription(
+        key="loadStatus",
+        name="Load Status",
+        icon="mdi:power-plug",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    "batteryPower": SensorEntityDescription(
+        key="batteryPower",
+        name="Battery Power",
+        icon="mdi:flash",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.POWER,
+        suggested_display_precision=1,
+    ),
+    "cellCount": SensorEntityDescription(
+        key="cellCount",
+        name="Cell Count",
+        icon="mdi:counter",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    "alarmCount": SensorEntityDescription(
+        key="alarmCount",
+        name="Alarm Count",
+        icon="mdi:alert-circle",
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "warningCount": SensorEntityDescription(
+        key="warningCount",
+        name="Warning Count",
+        icon="mdi:alert",
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "faultCount": SensorEntityDescription(
+        key="faultCount",
+        name="Fault Count",
+        icon="mdi:alert-octagon",
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "chargeMosfet": SensorEntityDescription(
+        key="chargeMosfet",
+        name="Charge MOSFET",
+        icon="mdi:electric-switch",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    "dischargeMosfet": SensorEntityDescription(
+        key="dischargeMosfet",
+        name="Discharge MOSFET",
+        icon="mdi:electric-switch",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    "ecoMode": SensorEntityDescription(
+        key="ecoMode",
+        name="Eco Mode",
+        icon="mdi:leaf",
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
 }
