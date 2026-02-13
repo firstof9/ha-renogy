@@ -324,7 +324,7 @@ class BLEUpdateCoordinator(DataUpdateCoordinator):
             raise UpdateFailed("No data received from BLE device")
 
         # Translate BLE keys to HA sensor keys and build coordinator data
-        for device_key, raw_data in raw_results.items():
+        for _, raw_data in raw_results.items():
             device_name = raw_data.get("__device", "Renogy BLE")
             device_type = raw_data.get("__device_type", "controller")
             mac_address = raw_data.get("__mac_address", "")

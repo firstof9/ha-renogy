@@ -120,7 +120,7 @@ class PersistentBLEConnection:
             self._lock = asyncio.Lock()
 
     def _notification_handler(
-        self, sender: BleakGATTCharacteristic, data: bytearray
+        self, _sender: BleakGATTCharacteristic, data: bytearray
     ) -> None:
         """Handle incoming notification data."""
         _LOGGER.debug(
@@ -223,7 +223,7 @@ class PersistentBLEConnection:
         )
         return False
 
-    def _on_disconnect(self, client: BleakClient) -> None:
+    def _on_disconnect(self, _client: BleakClient) -> None:
         """Handle disconnection callback."""
         _LOGGER.warning("[%s] Disconnected!", _obfuscate_mac(self.mac_address))
         self._connected = False

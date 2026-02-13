@@ -9,8 +9,6 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.helpers import config_validation as cv
 
-if TYPE_CHECKING:
-    from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from renogyapi import Renogy as api
 from renogyapi.exceptions import (
     NoDevices,
@@ -34,6 +32,9 @@ from .const import (
     DEFAULT_NAME,
     DOMAIN,
 )
+
+if TYPE_CHECKING:
+    from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 
 _LOGGER = logging.getLogger(__name__)
 
