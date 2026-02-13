@@ -128,9 +128,12 @@ async def test_manager():
 
     stats = manager.get_all_rejection_stats()
     assert "Dev1_controller" in stats
+
+
 """Test detailed coverage for ble_validator.py."""
 import pytest
 from custom_components.renogy.ble_validator import DataValidator
+
 
 def test_validate_no_limits():
     """Test validation when no limits are defined (e.g. inverter)."""
@@ -139,6 +142,7 @@ def test_validate_no_limits():
     validated, rejections = validator.validate_data(data)
     assert validated == data
     assert len(rejections) == 0
+
 
 def test_validate_non_numeric():
     """Test validation ignores non-numeric values."""
@@ -149,15 +153,16 @@ def test_validate_non_numeric():
     assert validated == data
     assert len(rejections) == 0
 
+
 def test_log_truncation():
     """Test that rejection log is truncated at max size."""
     validator = DataValidator("Controller", "controller")
     # Max log is 100
-    
+
     # Generate 105 rejections
     for i in range(105):
-        validator.validate_data({"battery_voltage": 100.0}) # Max is 20
-        
+        validator.validate_data({"battery_voltage": 100.0})  # Max is 20
+
     stats = validator.get_rejection_stats()
     assert stats["total_rejections"] == 100
     assert len(validator._rejection_log) == 100

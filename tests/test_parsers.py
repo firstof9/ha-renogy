@@ -288,6 +288,8 @@ def test_parse_controller_charging_info_too_short():
     # offset + 68 = 71.
     # So if 70, returns empty.
     assert result == {}
+
+
 """Test detailed coverage for ble_parsers.py."""
 import pytest
 from custom_components.renogy.ble_parsers import (
@@ -299,38 +301,40 @@ from custom_components.renogy.ble_parsers import (
     DeviceType,
 )
 
+
 def create_buffer(length, offset=3):
     """Create a buffer with given length and offset."""
     return bytearray([0] * (length + offset))
 
+
 def test_parse_inverter_settings_status():
     """Test parsing inverter settings status."""
     # Short data
-    assert parse_inverter_settings_status(b"\x00"*10) == {}
-    
+    assert parse_inverter_settings_status(b"\x00" * 10) == {}
+
     offset = 3
     # Full data length needed ~30+
     data = create_buffer(32, offset)
-    
+
     # machine_state (offset+14) -> 2 bytes
-    data[offset+14] = 0x00
-    data[offset+15] = 0x00 # 0 -> unknown? Or check dict in code
+    data[offset + 14] = 0x00
+    data[offset + 15] = 0x00  # 0 -> unknown? Or check dict in code
     # INVERTER_MACHINE_STATE isn't imported but let's assume 0 is Valid
-    
+
     # bus_voltage (offset+18) -> 200 -> 20.0
-    data[offset+18] = 0x00
-    data[offset+19] = 200
-    
+    data[offset + 18] = 0x00
+    data[offset + 19] = 200
+
     # load_current (offset+20) -> 10 -> 1.0
-    data[offset+20] = 0x00
-    data[offset+21] = 10
-    
+    data[offset + 20] = 0x00
+    data[offset + 21] = 10
+
     # load_percentage (offset+30) -> 50
-    data[offset+30] = 0x00
-    data[offset+31] = 50
-    
+    data[offset + 30] = 0x00
+    data[offset + 31] = 50
+
     result = parse_inverter_settings_status(bytes(data))
-    
+
     # Check simplified assertions
     assert result["bus_voltage"] == 20.0
     assert result["load_current"] == 1.0
@@ -340,25 +344,25 @@ def test_parse_inverter_settings_status():
 def test_parse_inverter_statistics():
     """Test parsing inverter statistics."""
     # Short data
-    assert parse_inverter_statistics(b"\x00"*5) == {}
-    
+    assert parse_inverter_statistics(b"\x00" * 5) == {}
+
     offset = 3
     # Need ~30 bytes
     data = create_buffer(32, offset)
-    
+
     # battery_charge_ah_today (offset+0)
     data[offset] = 0x00
-    data[offset+1] = 100
-    
+    data[offset + 1] = 100
+
     # battery_discharge_ah_total (offset+18) 4 bytes
     # 0x00 00 00 64 -> 100
-    data[offset+18] = 0x00
-    data[offset+19] = 0x00
-    data[offset+20] = 0x00
-    data[offset+21] = 100
-    
+    data[offset + 18] = 0x00
+    data[offset + 19] = 0x00
+    data[offset + 20] = 0x00
+    data[offset + 21] = 100
+
     result = parse_inverter_statistics(bytes(data))
-    
+
     assert result["battery_charge_ah_today"] == 100
     assert result["battery_discharge_ah_total"] == 100
 
@@ -366,26 +370,26 @@ def test_parse_inverter_statistics():
 def test_parse_inverter_settings():
     """Test parsing inverter settings."""
     # Short data
-    assert parse_inverter_settings(b"\x00"*5) == {}
-    
+    assert parse_inverter_settings(b"\x00" * 5) == {}
+
     offset = 3
     data = create_buffer(10, offset)
-    
+
     # output_priority (offset+0)
-    data[offset+1] = 0
-    
+    data[offset + 1] = 0
+
     # output_freq (offset+2) -> 5000 -> 50.0
-    data[offset+2] = 0x13
-    data[offset+3] = 0x88
-    
+    data[offset + 2] = 0x13
+    data[offset + 3] = 0x88
+
     # ac_range (offset+4) -> 0 -> wide
-    data[offset+5] = 0
-    
+    data[offset + 5] = 0
+
     # power_saving (offset+6) -> 1 -> True
-    data[offset+7] = 1
-    
+    data[offset + 7] = 1
+
     result = parse_inverter_settings(bytes(data))
-    
+
     assert result["output_frequency_setting"] == 50.0
     assert result["ac_voltage_range"] == "wide"
     assert result["power_saving_mode"] is True
@@ -393,31 +397,34 @@ def test_parse_inverter_settings():
 
 def test_parse_response_edge_cases():
     """Test parse_response edge cases."""
-    
+
     # Unknown Device Type
-    # DeviceType enum might be tricky if I can't instantiate an invalid one, 
+    # DeviceType enum might be tricky if I can't instantiate an invalid one,
     # but I can cast an int or mock it.
     # Actually DeviceType is an Enum.
     # We can pass an object that matches the type hint or a random string if not checked strictly by dispatch
-    
+
     result = parse_response("UNKNOWN_TYPE", 123, b"")
     assert result == {}
-    
+
     # Unknown Register
     result = parse_response(DeviceType.CONTROLLER, 99999, b"")
     assert result == {}
-    
+
     # Exception handling
     # We need to trigger an exception in the parser function.
     # We can patch PARSERS[DeviceType.CONTROLLER][12] to raise
-    
+
     from unittest.mock import patch
-    
-    with patch.dict("custom_components.renogy.ble_parsers.PARSERS", {
-        DeviceType.CONTROLLER: {
-            123: lambda x: (_ for _ in ()).throw(Exception("Parser Error"))
-        }
-    }):
+
+    with patch.dict(
+        "custom_components.renogy.ble_parsers.PARSERS",
+        {
+            DeviceType.CONTROLLER: {
+                123: lambda x: (_ for _ in ()).throw(Exception("Parser Error"))
+            }
+        },
+    ):
         result = parse_response(DeviceType.CONTROLLER, 123, b"")
         assert result == {}
 
