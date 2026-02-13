@@ -32,6 +32,15 @@ REQUEST_DELAY = 0.5
 RECONNECT_DELAY = 10.0
 
 
+def _obfuscate_mac(mac: str) -> str:
+    """Obfuscate a MAC address for logging, showing only the last 4 chars."""
+    parts = mac.split(":")
+    if len(parts) == 6:
+        return f"**:**:**:**:{parts[4]}:{parts[5]}"
+    # Fallback: show last 5 chars
+    return f"***{mac[-5:]}" if len(mac) > 5 else "***"
+
+
 @dataclass
 class DeviceConfig:
     """Configuration for a Renogy BLE device."""
@@ -112,7 +121,7 @@ class PersistentBLEConnection:
 
     def _notification_handler(self, sender: int, data: bytearray) -> None:
         """Handle incoming notification data."""
-        _LOGGER.debug("[%s] Notification: %s", self.mac_address, data.hex())
+        _LOGGER.debug("[%s] Notification: %s", _obfuscate_mac(self.mac_address), data.hex())
         self._notification_data.extend(data)
         if self._notification_event is not None:
             self._notification_event.set()
@@ -128,11 +137,11 @@ class PersistentBLEConnection:
             try:
                 if attempt > 0:
                     _LOGGER.info(
-                        "[%s] Retry %s/3...", self.mac_address, attempt + 1
+                        "[%s] Retry %s/3...", _obfuscate_mac(self.mac_address), attempt + 1
                     )
                     await asyncio.sleep(5.0)
 
-                _LOGGER.info("[%s] Connecting...", self.mac_address)
+                _LOGGER.info("[%s] Connecting...", _obfuscate_mac(self.mac_address))
 
                 device = await BleakScanner.find_device_by_address(
                     self.mac_address,
@@ -141,7 +150,7 @@ class PersistentBLEConnection:
 
                 if not device:
                     _LOGGER.debug(
-                        "[%s] Not found, running full scan...", self.mac_address
+                        "[%s] Not found, running full scan...", _obfuscate_mac(self.mac_address)
                     )
                     devices = await BleakScanner.discover(timeout=10.0)
                     for found in devices:
@@ -150,7 +159,7 @@ class PersistentBLEConnection:
                             break
 
                 if not device:
-                    _LOGGER.warning("[%s] Device not found", self.mac_address)
+                    _LOGGER.warning("[%s] Device not found", _obfuscate_mac(self.mac_address))
                     continue
 
                 self.client = BleakClient(
@@ -161,7 +170,7 @@ class PersistentBLEConnection:
                 await self.client.connect()
 
                 if not self.client.is_connected:
-                    _LOGGER.warning("[%s] Connection failed", self.mac_address)
+                    _LOGGER.warning("[%s] Connection failed", _obfuscate_mac(self.mac_address))
                     continue
 
                 await self._setup_characteristics()
@@ -171,20 +180,20 @@ class PersistentBLEConnection:
                 )
 
                 self._connected = True
-                _LOGGER.info("[%s] Connected successfully", self.mac_address)
+                _LOGGER.info("[%s] Connected successfully", _obfuscate_mac(self.mac_address))
                 return True
 
             except BleakError as err:
                 _LOGGER.warning(
                     "[%s] BLE error (attempt %s): %s",
-                    self.mac_address,
+                    _obfuscate_mac(self.mac_address),
                     attempt + 1,
                     err,
                 )
             except Exception:  # pylint: disable=broad-except
                 _LOGGER.warning(
                     "[%s] Error (attempt %s)",
-                    self.mac_address,
+                    _obfuscate_mac(self.mac_address),
                     attempt + 1,
                     exc_info=True,
                 )
@@ -197,13 +206,13 @@ class PersistentBLEConnection:
                 self.client = None
 
         _LOGGER.error(
-            "[%s] Failed to connect after 3 attempts", self.mac_address
+            "[%s] Failed to connect after 3 attempts", _obfuscate_mac(self.mac_address)
         )
         return False
 
     def _on_disconnect(self, client: BleakClient) -> None:
         """Handle disconnection callback."""
-        _LOGGER.warning("[%s] Disconnected!", self.mac_address)
+        _LOGGER.warning("[%s] Disconnected!", _obfuscate_mac(self.mac_address))
         self._connected = False
 
     async def _setup_characteristics(self) -> None:
@@ -217,32 +226,32 @@ class PersistentBLEConnection:
         if self.client is None:
             return
 
-        _LOGGER.debug("[%s] Discovering characteristics...", self.mac_address)
+        _LOGGER.debug("[%s] Discovering characteristics...", _obfuscate_mac(self.mac_address))
         for service in self.client.services:
             for char in service.characteristics:
                 if char.uuid.lower() == standard_write:
                     self._write_char = char.uuid
                     _LOGGER.debug(
-                        "[%s] Found write char: %s", self.mac_address, char.uuid
+                        "[%s] Found write char: %s", _obfuscate_mac(self.mac_address), char.uuid
                     )
                 elif char.uuid.lower() == standard_notify:
                     self._notify_char = char.uuid
                     _LOGGER.debug(
-                        "[%s] Found notify char: %s", self.mac_address, char.uuid
+                        "[%s] Found notify char: %s", _obfuscate_mac(self.mac_address), char.uuid
                     )
 
         if not self._notify_char:
             self._notify_char = NOTIFY_CHAR_UUID
             _LOGGER.warning(
                 "[%s] Using default notify char: %s",
-                self.mac_address,
+                _obfuscate_mac(self.mac_address),
                 self._notify_char,
             )
         if not self._write_char:
             self._write_char = WRITE_CHAR_UUID
             _LOGGER.warning(
                 "[%s] Using default write char: %s",
-                self.mac_address,
+                _obfuscate_mac(self.mac_address),
                 self._write_char,
             )
 
@@ -259,7 +268,7 @@ class PersistentBLEConnection:
             except Exception:  # pylint: disable=broad-except
                 pass
             self.client = None
-        _LOGGER.info("[%s] Disconnected", self.mac_address)
+        _LOGGER.info("[%s] Disconnected", _obfuscate_mac(self.mac_address))
 
     async def read_registers(
         self, device_id: int, register: int, word_count: int
@@ -283,7 +292,7 @@ class PersistentBLEConnection:
             if not self.is_connected:
                 _LOGGER.warning(
                     "[%s] Not connected, attempting reconnect...",
-                    self.mac_address,
+                    _obfuscate_mac(self.mac_address),
                 )
                 if not await self.connect():
                     return None
@@ -294,7 +303,7 @@ class PersistentBLEConnection:
             request = create_modbus_read_request(device_id, 0x03, register, word_count)
             _LOGGER.debug(
                 "[%s] Sending request (dev=%s, reg=%s, words=%s): %s",
-                self.mac_address,
+                _obfuscate_mac(self.mac_address),
                 device_id,
                 register,
                 word_count,
@@ -305,7 +314,7 @@ class PersistentBLEConnection:
                 assert self.client is not None
                 await self.client.write_gatt_char(self._write_char, request)
             except Exception as err:
-                _LOGGER.error("[%s] Write failed: %s", self.mac_address, err)
+                _LOGGER.error("[%s] Write failed: %s", _obfuscate_mac(self.mac_address), err)
                 self._connected = False
                 return None
 
@@ -316,7 +325,7 @@ class PersistentBLEConnection:
             except asyncio.TimeoutError:
                 _LOGGER.warning(
                     "[%s] Timeout waiting for response (reg=%s, dev_id=%s)",
-                    self.mac_address,
+                    _obfuscate_mac(self.mac_address),
                     register,
                     device_id,
                 )
@@ -329,7 +338,7 @@ class PersistentBLEConnection:
             if response:
                 _LOGGER.debug(
                     "[%s] Response (%s bytes): %s",
-                    self.mac_address,
+                    _obfuscate_mac(self.mac_address),
                     len(response),
                     response.hex(),
                 )
@@ -443,7 +452,7 @@ class BLEDeviceManager:
         for mac, configs in devices_by_mac.items():
             self._connections[mac] = PersistentBLEConnection(mac, configs)
             if len(configs) > 1:
-                _LOGGER.info("Hub mode: %s devices on %s", len(configs), mac)
+                _LOGGER.info("Hub mode: %s devices on %s", len(configs), _obfuscate_mac(mac))
 
         self.on_data_callback = on_data_callback
         self._running = False
@@ -462,11 +471,11 @@ class BLEDeviceManager:
         """
         connected = 0
         for mac, connection in self._connections.items():
-            _LOGGER.info("Connecting to BT module: %s", mac)
+            _LOGGER.info("Connecting to BT module: %s", _obfuscate_mac(mac))
             if await connection.connect():
                 connected += 1
             else:
-                _LOGGER.error("Failed to connect to: %s", mac)
+                _LOGGER.error("Failed to connect to: %s", _obfuscate_mac(mac))
             await asyncio.sleep(3.0)
 
         return connected
@@ -486,9 +495,9 @@ class BLEDeviceManager:
 
         for mac, connection in self._connections.items():
             if not connection.is_connected:
-                _LOGGER.warning("[%s] Not connected, reconnecting...", mac)
+                _LOGGER.warning("[%s] Not connected, reconnecting...", _obfuscate_mac(mac))
                 if not await connection.connect():
-                    _LOGGER.error("[%s] Reconnection failed", mac)
+                    _LOGGER.error("[%s] Reconnection failed", _obfuscate_mac(mac))
                     for config in connection.device_configs:
                         device_key = f"{mac}_{config.device_type}"
                         self._device_data[device_key].mark_failed()
