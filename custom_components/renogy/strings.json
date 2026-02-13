@@ -41,7 +41,7 @@
           "device_type": "Device Type",
           "device_id": "Device ID (Modbus)"
         },
-        "description": "A Renogy BLE device '{name}' was discovered. Configure it below.",
+        "description": "A Renogy BLE device {name} was discovered. Configure it below.",
         "title": "Renogy Bluetooth Discovered"
       },
       "reconfigure": {

@@ -10,6 +10,9 @@
         }
     ],
     "config_flow": true,
+    "dependencies": [
+        "bluetooth"
+    ],
     "documentation": "https://github.com/firstof9/ha-renogy/",
     "import_executor": true,
     "iot_class": "local_polling",
