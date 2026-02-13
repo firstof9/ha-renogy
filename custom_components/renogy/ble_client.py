@@ -59,7 +59,13 @@ class DeviceConfig:
             "battery": DeviceType.BATTERY,
             "inverter": DeviceType.INVERTER,
         }
-        return type_map.get(self.device_type.lower(), DeviceType.CONTROLLER)
+        normalized_type = self.device_type.lower()
+        if normalized_type not in type_map:
+            raise ValueError(
+                f"Invalid device type '{self.device_type}'. "
+                f"Must be one of: {', '.join(type_map.keys())}"
+            )
+        return type_map[normalized_type]
 
 
 @dataclass

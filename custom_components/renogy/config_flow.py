@@ -215,9 +215,23 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             mac_address = user_input.get(CONF_MAC_ADDRESS, "").strip().upper()
-            if not mac_address:
+
+            # Validation
+            is_valid = True
+            if len(mac_address) != 17 or mac_address[2] != ":" or mac_address[5] != ":":
+                is_valid = False
+            else:
+                try:
+                    int(mac_address.replace(":", ""), 16)
+                except ValueError:
+                    is_valid = False
+
+            if not is_valid:
                 self._errors[CONF_MAC_ADDRESS] = "invalid_mac"
             else:
+                await self.async_set_unique_id(mac_address)
+                self._abort_if_unique_id_configured()
+
                 data = {
                     **self._data,
                     **user_input,
@@ -303,15 +317,22 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         """Reconfigure BLE settings."""
         if user_input is not None:
             mac_address = user_input.get(CONF_MAC_ADDRESS, "").strip().upper()
-            if not mac_address:
+
+            # Basic validation: 17 chars, correct separators
+            if len(mac_address) != 17 or mac_address[2] != ":" or mac_address[5] != ":":
                 self._errors[CONF_MAC_ADDRESS] = "invalid_mac"
             else:
-                user_input[CONF_MAC_ADDRESS] = mac_address
-                _LOGGER.debug("%s BLE reconfigured.", DOMAIN)
-                return self.async_update_reload_and_abort(
-                    self._entry,
-                    data_updates=user_input,
-                )
+                # Check for valid hex chars
+                try:
+                    int(mac_address.replace(":", ""), 16)
+                    user_input[CONF_MAC_ADDRESS] = mac_address
+                    _LOGGER.debug("%s BLE reconfigured.", DOMAIN)
+                    return self.async_update_reload_and_abort(
+                        self._entry,
+                        data_updates=user_input,
+                    )
+                except ValueError:
+                    self._errors[CONF_MAC_ADDRESS] = "invalid_mac"
 
         return self.async_show_form(
             step_id="reconfigure",

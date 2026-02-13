@@ -114,16 +114,33 @@ def parse_controller_charging_info(data: bytes, offset: int = 3) -> Dict[str, An
     result["pv_current"] = bytes_to_int(data, offset + 16, 2, scale=0.01)
     result["pv_power"] = bytes_to_int(data, offset + 18, 2)
 
-    # Daily statistics
+    # Daily Min/Max
+    result["daily_min_battery_voltage"] = bytes_to_int(data, offset + 20, 2, scale=0.1)
+    result["daily_max_battery_voltage"] = bytes_to_int(data, offset + 22, 2, scale=0.1)
+    result["max_charge_current_today"] = bytes_to_int(data, offset + 24, 2, scale=0.01)
+    result["max_discharge_current_today"] = bytes_to_int(
+        data, offset + 26, 2, scale=0.01
+    )
+    result["max_charge_power_today"] = bytes_to_int(data, offset + 28, 2)
     result["max_charging_power_today"] = bytes_to_int(data, offset + 30, 2)
     result["max_discharging_power_today"] = bytes_to_int(data, offset + 32, 2)
+
+    # Cumulative Daily
     result["charging_amp_hours_today"] = bytes_to_int(data, offset + 34, 2)
     result["discharging_amp_hours_today"] = bytes_to_int(data, offset + 36, 2)
     result["power_generation_today"] = bytes_to_int(data, offset + 38, 2)
     result["power_consumption_today"] = bytes_to_int(data, offset + 40, 2)
 
-    # Cumulative totals (4 bytes)
+    # Uptime and Counts
+    result["controller_uptime"] = bytes_to_int(data, offset + 42, 2)
+    result["battery_full_charge_count"] = bytes_to_int(data, offset + 44, 2)
+    result["battery_over_discharge_count"] = bytes_to_int(data, offset + 46, 2)
+
+    # Cumulative Totals (4 bytes)
+    result["charging_amp_hours_total"] = bytes_to_int(data, offset + 48, 4)
+    result["discharging_amp_hours_total"] = bytes_to_int(data, offset + 52, 4)
     result["power_generation_total"] = bytes_to_int(data, offset + 56, 4)
+    result["power_consumption_total"] = bytes_to_int(data, offset + 60, 4)
 
     # Status
     load_status_byte = bytes_to_int(data, offset + 64, 1)
@@ -135,6 +152,13 @@ def parse_controller_charging_info(data: bytes, offset: int = 3) -> Dict[str, An
     result["charging_status"] = CONTROLLER_CHARGING_STATE.get(
         charging_status_byte, "unknown"
     )
+
+    # Faults (2 or 4 bytes depending on buffer size)
+    if len(data) >= offset + 70:
+        result["controller_faults"] = bytes_to_int(data, offset + 66, 4)
+    elif len(data) >= offset + 68:
+        # Partial faults (lower 16 bits only) due to 34-word limit
+        result["controller_faults"] = bytes_to_int(data, offset + 66, 2)
 
     return result
 
