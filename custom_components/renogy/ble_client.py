@@ -8,12 +8,14 @@ Adapted from https://github.com/Anto79-ops/renogy-ble
 from __future__ import annotations
 
 import asyncio
+import inspect
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
 from bleak import BleakClient, BleakScanner
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.exc import BleakError
 
 from .ble_parsers import DeviceType, get_registers_for_device, parse_response
@@ -113,13 +115,13 @@ class PersistentBLEConnection:
 
     def _ensure_async_primitives(self) -> None:
         """Ensure asyncio primitives are created in the current event loop."""
-        current_loop = asyncio.get_event_loop()
+        current_loop = asyncio.get_running_loop()
         if self._loop is not current_loop:
             self._loop = current_loop
             self._notification_event = asyncio.Event()
             self._lock = asyncio.Lock()
 
-    def _notification_handler(self, sender: int, data: bytearray) -> None:
+    def _notification_handler(self, sender: BleakGATTCharacteristic, data: bytearray) -> None:
         """Handle incoming notification data."""
         _LOGGER.debug("[%s] Notification: %s", _obfuscate_mac(self.mac_address), data.hex())
         self._notification_data.extend(data)
@@ -220,21 +222,18 @@ class PersistentBLEConnection:
         self._notify_char = None
         self._write_char = None
 
-        standard_write = "0000ffd1-0000-1000-8000-00805f9b34fb"
-        standard_notify = "0000fff1-0000-1000-8000-00805f9b34fb"
-
         if self.client is None:
             return
 
         _LOGGER.debug("[%s] Discovering characteristics...", _obfuscate_mac(self.mac_address))
         for service in self.client.services:
             for char in service.characteristics:
-                if char.uuid.lower() == standard_write:
+                if char.uuid.lower() == WRITE_CHAR_UUID:
                     self._write_char = char.uuid
                     _LOGGER.debug(
                         "[%s] Found write char: %s", _obfuscate_mac(self.mac_address), char.uuid
                     )
-                elif char.uuid.lower() == standard_notify:
+                elif char.uuid.lower() == NOTIFY_CHAR_UUID:
                     self._notify_char = char.uuid
                     _LOGGER.debug(
                         "[%s] Found notify char: %s", _obfuscate_mac(self.mac_address), char.uuid
@@ -285,8 +284,16 @@ class PersistentBLEConnection:
         """
         self._ensure_async_primitives()
 
-        assert self._lock is not None
-        assert self._notification_event is not None
+        if self._lock is None:
+            raise RuntimeError(
+                "BLE async lock not initialized; "
+                "ensure _ensure_async_primitives() was called"
+            )
+        if self._notification_event is None:
+            raise RuntimeError(
+                "BLE notification event not initialized; "
+                "ensure _ensure_async_primitives() was called"
+            )
 
         async with self._lock:
             if not self.is_connected:
@@ -311,7 +318,10 @@ class PersistentBLEConnection:
             )
 
             try:
-                assert self.client is not None
+                if self.client is None:
+                    raise RuntimeError(
+                        "BLE client is None; connection was lost before write"
+                    )
                 await self.client.write_gatt_char(self._write_char, request)
             except Exception as err:
                 _LOGGER.error("[%s] Write failed: %s", _obfuscate_mac(self.mac_address), err)
@@ -446,7 +456,7 @@ class BLEDeviceManager:
                 devices_by_mac[mac] = []
             devices_by_mac[mac].append(config)
 
-            device_key = f"{mac}_{config.device_type}"
+            device_key = f"{mac}_{config.device_type}_{config.device_id}"
             self._device_data[device_key] = DeviceData(config=config)
 
         for mac, configs in devices_by_mac.items():
@@ -499,12 +509,12 @@ class BLEDeviceManager:
                 if not await connection.connect():
                     _LOGGER.error("[%s] Reconnection failed", _obfuscate_mac(mac))
                     for config in connection.device_configs:
-                        device_key = f"{mac}_{config.device_type}"
+                        device_key = f"{mac}_{config.device_type}_{config.device_id}"
                         self._device_data[device_key].mark_failed()
                     continue
 
             for config in connection.device_configs:
-                device_key = f"{mac}_{config.device_type}"
+                device_key = f"{mac}_{config.device_type}_{config.device_id}"
                 _LOGGER.info(
                     "Polling: %s (type=%s, id=%s)",
                     config.name,
@@ -520,7 +530,9 @@ class BLEDeviceManager:
                         results[device_key] = data
 
                         if self.on_data_callback:
-                            await self.on_data_callback(device_key, data)
+                            result = self.on_data_callback(device_key, data)
+                            if inspect.isawaitable(result):
+                                await result
                     else:
                         _LOGGER.warning("  %s: No data", config.name)
                         self._device_data[device_key].mark_failed()

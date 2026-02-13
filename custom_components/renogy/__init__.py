@@ -159,15 +159,29 @@ async def _async_setup_ble_entry(
         hass, interval, config_entry, ble_manager
     )
 
-    await coordinator.async_refresh()
-
-    if not coordinator.last_update_success:
-        raise ConfigEntryNotReady
-
+    # Store in hass.data immediately so async_unload_entry can clean up
+    # even if the initial refresh fails mid-way through platform setup.
     hass.data[DOMAIN][config_entry.entry_id] = {
         COORDINATOR: coordinator,
         MANAGER: ble_manager,
     }
+
+    try:
+        await coordinator.async_refresh()
+    except Exception as err:
+        # Disconnect BLEDeviceManager to avoid leaked connections
+        await ble_manager.disconnect_all()
+        hass.data[DOMAIN].pop(config_entry.entry_id, None)
+        raise ConfigEntryNotReady(
+            f"BLE initial refresh failed: {err}"
+        ) from err
+
+    if not coordinator.last_update_success:
+        await ble_manager.disconnect_all()
+        hass.data[DOMAIN].pop(config_entry.entry_id, None)
+        raise ConfigEntryNotReady(
+            "BLE coordinator refresh was unsuccessful"
+        )
 
     # Register BLE device in device registry
     device_registry = dr.async_get(hass)

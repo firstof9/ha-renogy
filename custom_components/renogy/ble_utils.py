@@ -176,6 +176,17 @@ def validate_modbus_response(
         _LOGGER.warning("Response too short: %s bytes", len(data))
         return False
 
+    # Verify device ID if expected
+    if expected_device_id is not None:
+        actual_device_id = data[0]
+        if actual_device_id != expected_device_id:
+            _LOGGER.warning(
+                "Unexpected device id: got %s, expected %s",
+                actual_device_id,
+                expected_device_id,
+            )
+            return False
+
     # Check for error response
     if data[1] & 0x80:
         error_code = data[2] if len(data) > 2 else 0

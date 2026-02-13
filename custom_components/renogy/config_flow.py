@@ -38,7 +38,6 @@ _LOGGER = logging.getLogger(__name__)
 DEVICE_TYPES = ["controller", "battery", "inverter"]
 
 
-@config_entries.HANDLERS.register(DOMAIN)
 class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow for Renogy."""
 
@@ -115,7 +114,8 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self._errors = {}
 
         if user_input is not None:
-            assert self._discovered_device is not None
+            if self._discovered_device is None:
+                return self.async_abort(reason="discovery_device_missing")
             mac_address = self._discovered_device.address.upper()
 
             data = {
@@ -130,7 +130,8 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             }
             return self.async_create_entry(title=data[CONF_NAME], data=data)
 
-        assert self._discovered_device is not None
+        if self._discovered_device is None:
+            return self.async_abort(reason="discovery_device_missing")
         device_name = self._discovered_device.name or DEFAULT_BLE_NAME
 
         return self.async_show_form(
@@ -244,7 +245,8 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None):
         """Add reconfigure step to allow to reconfigure a config entry."""
         self._entry = self._get_reconfigure_entry()
-        assert self._entry
+        if not self._entry:
+            return self.async_abort(reason="reconfigure_entry_missing")
         self._data = dict(self._entry.data)
         self._errors = {}
 

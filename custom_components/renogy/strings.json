@@ -3,10 +3,10 @@
     "error": {
       "invalid_key": "One or both the keys are invalid. Please try again.",
       "rate_limit": "Rate limit exceeded, please try again in a few minutes.",
-      "api_error": "An API error has occured. Please try again later.",
+      "api_error": "An API error has occurred. Please try again later.",
       "no_devices": "The API returned no devices for your account.",
       "invalid_mac": "Invalid MAC address. Please enter a valid Bluetooth MAC address.",
-      "general": "An unknown error has occured, please check your Home Assistant log file for details."
+      "general": "An unknown error has occurred, please check your Home Assistant log file for details."
     },
     "step": {
       "user": {
@@ -58,7 +58,9 @@
       }
     },
     "abort": {
-      "already_configured": "This device is already configured."
+      "already_configured": "This device is already configured.",
+      "discovery_device_missing": "Discovery information is no longer available. Please try again.",
+      "reconfigure_entry_missing": "Configuration entry not found. Please try again."
     }
   }
 }

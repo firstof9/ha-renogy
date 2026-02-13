@@ -504,6 +504,10 @@ INVERTER_OUTPUT_PRIORITY = {
 INVERTER_REGISTERS = [
     {"name": "main_status", "register": 4000, "words": 10},
     {"name": "device_info", "register": 4303, "words": 24},
+    {"name": "pv_info", "register": 4327, "words": 7},
+    {"name": "settings_status", "register": 4398, "words": 20},
+    {"name": "settings", "register": 4441, "words": 4},
+    {"name": "statistics", "register": 4543, "words": 25},
 ]
 
 

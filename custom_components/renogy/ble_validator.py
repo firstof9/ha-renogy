@@ -16,8 +16,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 _LOGGER = logging.getLogger(__name__)
 
-# Validation limits: (min, max, max_change_per_update)
-CONTROLLER_VALIDATION_LIMITS = {
+# Base validation limits for a 12V system: (min, max, max_change_per_update)
+_CONTROLLER_BASE_LIMITS: Dict[str, Tuple[float, float, float]] = {
     # Battery sensors
     "battery_voltage": (0, 20, 5),
     "battery_current": (-100, 100, 50),
@@ -26,7 +26,7 @@ CONTROLLER_VALIDATION_LIMITS = {
     "charging_amp_hours_today": (0, 10000, 200),
     "discharging_amp_hours_today": (0, 10000, 200),
     # PV (solar panel) sensors
-    "pv_voltage": (0, 25, 10),
+    "pv_voltage": (0, 30, 10),
     "pv_current": (0, 100, 50),
     "pv_power": (0, 5000, 2000),
     "max_charging_power_today": (0, 5000, 5000),
@@ -42,6 +42,34 @@ CONTROLLER_VALIDATION_LIMITS = {
     "controller_temperature": (-40, 85, 20),
 }
 
+# Keys whose max and max_change scale with system voltage
+_VOLTAGE_SCALED_KEYS = {"battery_voltage", "pv_voltage", "load_voltage"}
+
+
+def get_controller_validation_limits(
+    system_voltage: int = 12,
+) -> Dict[str, Tuple[float, float, float]]:
+    """Return controller validation limits scaled for the given system voltage.
+
+    Voltage-dependent keys (battery_voltage, pv_voltage, load_voltage) have
+    their max and max_change values multiplied by a factor derived from the
+    system voltage (12V → 1×, 24V → 2×, 48V → 4×).
+
+    Args:
+        system_voltage: Nominal system voltage (12, 24, or 48).
+
+    Returns:
+        Dictionary of (min, max, max_change_per_update) tuples.
+    """
+    multiplier = max(system_voltage / 12, 1.0)
+    limits: Dict[str, Tuple[float, float, float]] = {}
+    for key, (min_val, max_val, max_change) in _CONTROLLER_BASE_LIMITS.items():
+        if key in _VOLTAGE_SCALED_KEYS:
+            limits[key] = (min_val, max_val * multiplier, max_change * multiplier)
+        else:
+            limits[key] = (min_val, max_val, max_change)
+    return limits
+
 
 class DataValidator:
     """Validates sensor data and detects invalid spikes.
@@ -49,12 +77,18 @@ class DataValidator:
     Maintains history of last known good values and rejection logs.
     """
 
-    def __init__(self, device_name: str, device_type: str = "controller") -> None:
+    def __init__(
+        self,
+        device_name: str,
+        device_type: str = "controller",
+        system_voltage: int = 12,
+    ) -> None:
         """Initialize the data validator.
 
         Args:
             device_name: Name of the device for logging.
             device_type: Type of device ('controller', 'battery', 'inverter').
+            system_voltage: Nominal system voltage (12, 24, or 48).
         """
         self.device_name = device_name
         self.device_type = device_type
@@ -63,7 +97,7 @@ class DataValidator:
         self._max_rejection_log = 100
 
         if device_type == "controller":
-            self._limits = CONTROLLER_VALIDATION_LIMITS
+            self._limits = get_controller_validation_limits(system_voltage)
         else:
             self._limits: Dict[str, tuple] = {}
 
@@ -186,19 +220,25 @@ class DataValidatorManager:
         self._validators: Dict[str, DataValidator] = {}
 
     def get_validator(
-        self, device_name: str, device_type: str
+        self, device_name: str, device_type: str, system_voltage: int = 12
     ) -> DataValidator:
         """Get or create a validator for a device."""
         key = f"{device_name}_{device_type}"
         if key not in self._validators:
-            self._validators[key] = DataValidator(device_name, device_type)
+            self._validators[key] = DataValidator(
+                device_name, device_type, system_voltage
+            )
         return self._validators[key]
 
     def validate_device_data(
-        self, device_name: str, device_type: str, data: Dict[str, Any]
+        self,
+        device_name: str,
+        device_type: str,
+        data: Dict[str, Any],
+        system_voltage: int = 12,
     ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
         """Validate data for a device."""
-        validator = self.get_validator(device_name, device_type)
+        validator = self.get_validator(device_name, device_type, system_voltage)
         return validator.validate_data(data)
 
     def get_all_rejection_stats(self) -> Dict[str, Dict[str, Any]]:
