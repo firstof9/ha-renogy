@@ -1,18 +1,18 @@
 {
     "domain": "renogy",
     "name": "Renogy",
-    "codeowners": [
-        "@firstof9"
+    "after_dependencies": [
+        "bluetooth"
     ],
     "bluetooth": [
         {
             "local_name": "BT-TH-*"
         }
     ],
-    "config_flow": true,
-    "after_dependencies": [
-        "bluetooth"
+    "codeowners": [
+        "@firstof9"
     ],
+    "config_flow": true,
     "documentation": "https://github.com/firstof9/ha-renogy/",
     "import_executor": true,
     "iot_class": "local_polling",
