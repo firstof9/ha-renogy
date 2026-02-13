@@ -12,7 +12,7 @@ from custom_components.renogy.ble_utils import (
 )
 
 
-async def test_modbus_crc16():
+def test_modbus_crc16():
     """Test CRC calculation."""
     # Example: Read registers 0x000A, 1 word from device 1
     # 01 03 00 0A 00 01
@@ -23,7 +23,7 @@ async def test_modbus_crc16():
     assert crc_hi == 0x08
 
 
-async def test_create_modbus_read_request():
+def test_create_modbus_read_request():
     """Test frame creation."""
     frame = create_modbus_read_request(1, 3, 10, 1)
     # 01 03 00 0A 00 01 A4 08
@@ -31,7 +31,7 @@ async def test_create_modbus_read_request():
     assert frame == expected
 
 
-async def test_bytes_to_int():
+def test_bytes_to_int():
     """Test byte conversion."""
     data = bytes([0x01, 0xFF, 0x80, 0x00])
 
@@ -58,7 +58,7 @@ async def test_bytes_to_int():
     assert bytes_to_int(data, 10, 1) == 0
 
 
-async def test_bytes_to_ascii():
+def test_bytes_to_ascii():
     """Test ASCII conversion."""
     data = b"Hello\x00World"
     assert bytes_to_ascii(data, 0, 5) == "Hello"
@@ -73,7 +73,7 @@ async def test_bytes_to_ascii():
     assert bytes_to_ascii(b"", 0, 5) == ""
 
 
-async def test_parse_temperature():
+def test_parse_temperature():
     """Test temperature parsing."""
     assert parse_temperature(25) == 25
     assert parse_temperature(138) == -10  # 138 > 127 -> -(138-128) = -10
@@ -82,7 +82,7 @@ async def test_parse_temperature():
     assert parse_temperature(25, offset=10) == 15
 
 
-async def test_validate_modbus_response():
+def test_validate_modbus_response():
     """Test response validation."""
     # Valid response: Dev 1, Func 3, 2 bytes, val 0x1234, CRC
     # 01 03 02 12 34 <CRC>
@@ -106,7 +106,7 @@ async def test_validate_modbus_response():
     assert validate_modbus_response(bad_crc) is False
 
 
-async def test_format_mac_address():
+def test_format_mac_address():
     """Test MAC formatting."""
     assert format_mac_address("AA:BB:CC:DD:EE:FF") == "AA:BB:CC:DD:EE:FF"
     assert format_mac_address("aabbccddeeff") == "AA:BB:CC:DD:EE:FF"
@@ -119,7 +119,7 @@ async def test_format_mac_address():
 # Detailed coverage for ble_utils.py
 
 
-async def test_bytes_to_int_coverage():
+def test_bytes_to_int_coverage():
     """Test bytes_to_int edge cases."""
 
     # Test length 4 signed
@@ -134,7 +134,7 @@ async def test_bytes_to_int_coverage():
     assert bytes_to_int(data, 0, 5) == 0
 
 
-async def test_validate_modbus_response_coverage():
+def test_validate_modbus_response_coverage():
     """Test validate_modbus_response edge cases."""
 
     # Error response (Function code & 0x80)

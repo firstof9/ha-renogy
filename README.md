@@ -68,11 +68,11 @@ You probably do not want to do this! Use the HACS method above unless you know w
 
 When using **Hub Mode** (multiple devices connected to one BT-2 via Communication Hub):
 
-| Device Type | Standalone | Hub Mode |
-|-------------|------------|----------|
-| Controller | 255 | 96, 97 |
-| Battery | 255 | 48, 49, 50 |
-| Inverter | 255, 32 | 32 |
+Device Type | Standalone | Hub Mode
+-------------|------------|----------
+Controller | 255 | 96, 97
+Battery | 255 | 48, 49, 50
+Inverter | 255, 32 | 32
 
 For **separate BT modules** (one per device), use `device_id: 255`.
 

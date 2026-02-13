@@ -310,6 +310,7 @@ async def test_connection_retry_logic():
 
         assert result is True
         assert mock_scanner.find_device_by_address.call_count == 2
+        mock_sleep.assert_awaited()
 
 
 async def test_connection_retry_fail_after_3():

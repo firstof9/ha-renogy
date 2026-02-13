@@ -38,7 +38,7 @@ def set_bytes(buffer, offset, value, size=2):
         buffer[offset + i] = b
 
 
-async def test_parse_controller_device_info():
+def test_parse_controller_device_info():
     """Test parse_controller_device_info."""
     offset = 3
     # Needs len > offset + 16 (19 total)
@@ -55,7 +55,7 @@ async def test_parse_controller_device_info():
     assert parse_controller_device_info(b"", offset) == {}
 
 
-async def test_parse_controller_device_id():
+def test_parse_controller_device_id():
     """Test parse_controller_device_id."""
     offset = 3
     data = create_buffer(2, offset)
@@ -68,7 +68,7 @@ async def test_parse_controller_device_id():
     assert parse_controller_device_id(b"", offset) == {}
 
 
-async def test_parse_controller_battery_type():
+def test_parse_controller_battery_type():
     """Test parse_controller_battery_type."""
     offset = 3
     data = create_buffer(2, offset)
@@ -83,7 +83,7 @@ async def test_parse_controller_battery_type():
     assert result["battery_type"] == "unknown"
 
 
-async def test_parse_controller_faults():
+def test_parse_controller_faults():
     """Test parse_controller_faults."""
     offset = 3
     # Needs offset + 4 bytes
@@ -103,7 +103,7 @@ async def test_parse_controller_faults():
     }
 
 
-async def test_parse_controller_historical():
+def test_parse_controller_historical():
     """Test parse_controller_historical."""
     offset = 3
     # Needs offset + 42 bytes
@@ -125,7 +125,7 @@ async def test_parse_controller_historical():
     assert result["daily_charge_ah"][0] == 50
 
 
-async def test_parse_battery_cell_info():
+def test_parse_battery_cell_info():
     """Test parse_battery_cell_info."""
     offset = 3
     # 4 cells * 2 bytes = 8 bytes needed + 2 bytes for count = 10 bytes
@@ -140,7 +140,7 @@ async def test_parse_battery_cell_info():
     assert result["cell_voltages"][1] == 3.3
 
 
-async def test_parse_battery_temp_info():
+def test_parse_battery_temp_info():
     """Test parse_battery_temp_info."""
     offset = 3
     # 2 bytes count, then temps
@@ -153,7 +153,7 @@ async def test_parse_battery_temp_info():
     assert result["temperatures"][0] == 25.0
 
 
-async def test_parse_battery_info():
+def test_parse_battery_info():
     """Test parse_battery_info."""
     offset = 3
     # offset+0(2): current, +2(2): voltage, +4(4): rem_cap, +8(4): total_cap
@@ -166,7 +166,7 @@ async def test_parse_battery_info():
     assert result["voltage"] == 120.0
 
 
-async def test_parse_battery_alarm_info():
+def test_parse_battery_alarm_info():
     """Test parse_battery_alarm_info."""
     offset = 3
     # Need offset + 20
@@ -179,7 +179,7 @@ async def test_parse_battery_alarm_info():
     assert "cell_low_voltage" in result["warnings"]
 
 
-async def test_parse_battery_device_info():
+def test_parse_battery_device_info():
     """Test parse_battery_device_info."""
     offset = 3
     # offset+0(16): model
@@ -192,7 +192,7 @@ async def test_parse_battery_device_info():
     assert result["model"] == "RNG-BATT"
 
 
-async def test_parse_inverter_main_status():
+def test_parse_inverter_main_status():
     """Test parse_inverter_main_status."""
     offset = 3
     # Needs offset + 18
@@ -204,7 +204,7 @@ async def test_parse_inverter_main_status():
     assert result["battery_voltage"] == 12.0
 
 
-async def test_parse_inverter_device_info():
+def test_parse_inverter_device_info():
     """Test parse_inverter_device_info."""
     offset = 3
     # Need offset + 48
@@ -218,7 +218,7 @@ async def test_parse_inverter_device_info():
     assert result["model"].strip() == "RNG-INV"
 
 
-async def test_parse_inverter_pv_info():
+def test_parse_inverter_pv_info():
     """Test parse_inverter_pv_info."""
     offset = 3
     data = create_buffer(14, offset)
@@ -232,7 +232,7 @@ async def test_parse_inverter_pv_info():
 # Additional parser tests
 
 
-async def test_parse_controller_charging_info_full_faults():
+def test_parse_controller_charging_info_full_faults():
     """Test parsing with full buffer including all faults."""
     # Create valid buffer of length 70 (3 (offset) + 67 bytes data).
     # Wait, offset=3 usually. So need 3 + 67 bytes?
@@ -260,7 +260,7 @@ async def test_parse_controller_charging_info_full_faults():
     assert result["controller_faults"] == 0x12345678
 
 
-async def test_parse_controller_charging_info_partial_faults():
+def test_parse_controller_charging_info_partial_faults():
     """Test parsing with buffer limited to 68 bytes (34 registers)."""
     # Offset=3. Need 3 + 68 = 71 bytes total.
     # If len is 71, index goes up to 70. (0..70)
@@ -284,7 +284,7 @@ async def test_parse_controller_charging_info_partial_faults():
     assert result["controller_faults"] == 0x1234
 
 
-async def test_parse_controller_charging_info_too_short():
+def test_parse_controller_charging_info_too_short():
     """Test parsing with insufficient buffer."""
     offset = 3
     data = bytearray(70)  # Just short of 71
@@ -300,7 +300,7 @@ async def test_parse_controller_charging_info_too_short():
 # Detailed coverage for ble_parsers.py
 
 
-async def test_parse_inverter_settings_status():
+def test_parse_inverter_settings_status():
     """Test parsing inverter settings status."""
     # Short data
     assert parse_inverter_settings_status(b"\x00" * 10) == {}
@@ -334,7 +334,7 @@ async def test_parse_inverter_settings_status():
     assert result["load_percentage"] == 50
 
 
-async def test_parse_inverter_statistics():
+def test_parse_inverter_statistics():
     """Test parsing inverter statistics."""
     # Short data
     assert parse_inverter_statistics(b"\x00" * 5) == {}
@@ -360,7 +360,7 @@ async def test_parse_inverter_statistics():
     assert result["battery_discharge_ah_total"] == 100
 
 
-async def test_parse_inverter_settings():
+def test_parse_inverter_settings():
     """Test parsing inverter settings."""
     # Short data
     assert parse_inverter_settings(b"\x00" * 5) == {}
@@ -388,7 +388,7 @@ async def test_parse_inverter_settings():
     assert result["power_saving_mode"] is True
 
 
-async def test_parse_response_edge_cases():
+def test_parse_response_edge_cases():
     """Test parse_response edge cases."""
 
     # Unknown Device Type
@@ -420,7 +420,7 @@ async def test_parse_response_edge_cases():
         assert result == {}
 
 
-async def test_get_registers_for_device_unknown():
+def test_get_registers_for_device_unknown():
     """Test get_registers_for_device with unknown type."""
     result = get_registers_for_device("UNKNOWN")
     assert result == []
@@ -429,12 +429,12 @@ async def test_get_registers_for_device_unknown():
 # Deep coverage tests for ble_parsers.py
 
 
-async def test_parse_controller_battery_type_short():
+def test_parse_controller_battery_type_short():
     """Test short data for battery type."""
     assert parse_controller_battery_type(b"\x00" * 3) == {}
 
 
-async def test_parse_controller_faults_bits():
+def test_parse_controller_faults_bits():
     """Test fault parsing with specific bits."""
     offset = 3
     data = create_buffer(4, offset)
@@ -460,26 +460,26 @@ async def test_parse_controller_faults_bits():
     assert result["warning_count"] == 1
 
 
-async def test_parse_controller_historical_short():
+def test_parse_controller_historical_short():
     """Test historical data short."""
     # Needs 42 bytes + offset
     assert parse_controller_historical(b"\x00" * 40) == {}
 
 
-async def test_parse_controller_device_info_short():
+def test_parse_controller_device_info_short():
     """Test device info short."""
     # registers 0x000A - 0x0011 (8 registers = 16 bytes)
     # limit check is likely around 16
     assert parse_controller_device_info(b"\x00" * 10) == {}
 
 
-async def test_parse_controller_device_id_short():
+def test_parse_controller_device_id_short():
     """Test device id short."""
     # registers 0x001A (1 register = 2 bytes)
     assert parse_controller_device_id(b"\x00" * 3) == {}
 
 
-async def test_parse_controller_charging_info_short():
+def test_parse_controller_charging_info_short():
     """Test charging info short."""
     # registers 0x0100 -> many
     assert parse_controller_charging_info(b"\x00" * 20) == {}
@@ -493,7 +493,7 @@ async def test_parse_controller_charging_info_short():
 # =================================================================================
 
 
-async def test_parse_controller_charging_info_branches():
+def test_parse_controller_charging_info_branches():
     """Test branches in parse_controller_charging_info."""
     offset = 3
     # 1. Short data
@@ -537,7 +537,7 @@ async def test_parse_controller_charging_info_branches():
 # =================================================================================
 
 
-async def test_parse_battery_short_data():
+def test_parse_battery_short_data():
     """Test short data returns for battery parsers."""
     assert parse_battery_cell_info(b"\x00" * 3) == {}
     assert parse_battery_temp_info(b"\x00" * 3) == {}
@@ -554,7 +554,7 @@ async def test_parse_battery_short_data():
     assert parse_battery_device_info(b"\x00" * 10) == {}
 
 
-async def test_parse_battery_info_logic():
+def test_parse_battery_info_logic():
     """Test logic in parse_battery_info."""
     offset = 3
     data = create_buffer(12, offset)
@@ -579,7 +579,7 @@ async def test_parse_battery_info_logic():
     assert result["soc"] == 50.0
 
 
-async def test_parse_battery_alarm_info_coverage():
+def test_parse_battery_alarm_info_coverage():
     """Test detailed alarm parsing."""
     offset = 3
     data = create_buffer(20, offset)
@@ -626,7 +626,7 @@ async def test_parse_battery_alarm_info_coverage():
 # =================================================================================
 
 
-async def test_parse_inverter_short_data():
+def test_parse_inverter_short_data():
     """Test short data for inverter parsers."""
     assert parse_inverter_main_status(b"\x00" * 10) == {}
     assert parse_inverter_device_info(b"\x00" * 40) == {}
@@ -637,7 +637,7 @@ async def test_parse_inverter_short_data():
     assert parse_inverter_settings(b"\x00" * 5) == {}
 
 
-async def test_parse_inverter_main_status_logic():
+def test_parse_inverter_main_status_logic():
     """Test logic in parse_inverter_main_status."""
     offset = 3
     data = create_buffer(20, offset)
@@ -666,7 +666,7 @@ async def test_parse_inverter_main_status_logic():
     assert "input_frequency" in result
 
 
-async def test_parse_inverter_pv_info_branches():
+def test_parse_inverter_pv_info_branches():
     """Test branches in parse_inverter_pv_info."""
     offset = 3
     # Length >= 12 checks
@@ -680,7 +680,7 @@ async def test_parse_inverter_pv_info_branches():
     assert result["charging_status"] == "unknown"
 
 
-async def test_parse_inverter_settings_status_branches():
+def test_parse_inverter_settings_status_branches():
     """Test intermediate length checks."""
     offset = 3
     # 1. < 16 (but guard is at 30, so anything < 30 returns empty)
@@ -694,7 +694,7 @@ async def test_parse_inverter_settings_status_branches():
     assert "load_percentage" in res
 
 
-async def test_parse_inverter_statistics_branches():
+def test_parse_inverter_statistics_branches():
     """Test branches in parse_inverter_statistics."""
     offset = 3
     # 1. >= 10 but < 30
@@ -710,7 +710,7 @@ async def test_parse_inverter_statistics_branches():
 # Refinement coverage tests for ble_parsers.py
 
 
-async def test_parse_battery_alarm_more_coverage():
+def test_parse_battery_alarm_more_coverage():
     """Cover remaining alarm branches."""
     offset = 3
     data = create_buffer(20, offset)
@@ -741,7 +741,7 @@ async def test_parse_battery_alarm_more_coverage():
     assert "cell_11_voltage_error" in result["warnings"]
 
 
-async def test_parse_inverter_main_status_low_faults_and_power():
+def test_parse_inverter_main_status_low_faults_and_power():
     """Cover low faults loop and input power calc."""
     offset = 3
     data = create_buffer(20, offset)
@@ -765,7 +765,7 @@ async def test_parse_inverter_main_status_low_faults_and_power():
     assert result["input_power"] == 120.0
 
 
-async def test_parse_response_debug_log():
+def test_parse_response_debug_log():
     """Test debug log in parse_response."""
     with patch("custom_components.renogy.ble_parsers._LOGGER") as mock_logger:
         # Valid parsing
@@ -782,7 +782,7 @@ async def test_parse_response_debug_log():
 # Final refinement coverage tests for ble_parsers.py
 
 
-async def test_parse_battery_alarm_remaining_variants():
+def test_parse_battery_alarm_remaining_variants():
     """Cover remaining alarm code variants 2 and 3."""
     offset = 3
     data = create_buffer(20, offset)
