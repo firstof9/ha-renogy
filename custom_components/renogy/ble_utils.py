@@ -63,7 +63,9 @@ def create_modbus_read_request(
     )
     crc_low, crc_high = modbus_crc16(frame)
     frame.extend([crc_low, crc_high])
-    _LOGGER.debug("Created Modbus request: register=%s, frame=%s", register, list(frame))
+    _LOGGER.debug(
+        "Created Modbus request: register=%s, frame=%s", register, list(frame)
+    )
     return frame
 
 

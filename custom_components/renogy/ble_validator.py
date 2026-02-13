@@ -129,13 +129,9 @@ class DataValidator:
             rejection_reason = None
 
             if value < min_val:
-                rejection_reason = (
-                    f"below_minimum (value={value}, min={min_val})"
-                )
+                rejection_reason = f"below_minimum (value={value}, min={min_val})"
             elif value > max_val:
-                rejection_reason = (
-                    f"above_maximum (value={value}, max={max_val})"
-                )
+                rejection_reason = f"above_maximum (value={value}, max={max_val})"
 
             if rejection_reason is None and key in self._last_good_values:
                 last_value = self._last_good_values[key]

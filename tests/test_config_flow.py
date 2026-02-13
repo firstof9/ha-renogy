@@ -795,4 +795,3 @@ async def test_bluetooth_discovery_already_configured(hass):
 
     assert result["type"] == FlowResultType.ABORT
     assert result["reason"] == "already_configured"
-

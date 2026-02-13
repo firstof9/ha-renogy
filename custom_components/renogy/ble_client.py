@@ -93,9 +93,7 @@ class PersistentBLEConnection:
     (multiple devices on one BT module).
     """
 
-    def __init__(
-        self, mac_address: str, device_configs: List[DeviceConfig]
-    ) -> None:
+    def __init__(self, mac_address: str, device_configs: List[DeviceConfig]) -> None:
         """Initialize the connection."""
         self.mac_address = mac_address
         self.device_configs = device_configs
@@ -121,9 +119,13 @@ class PersistentBLEConnection:
             self._notification_event = asyncio.Event()
             self._lock = asyncio.Lock()
 
-    def _notification_handler(self, sender: BleakGATTCharacteristic, data: bytearray) -> None:
+    def _notification_handler(
+        self, sender: BleakGATTCharacteristic, data: bytearray
+    ) -> None:
         """Handle incoming notification data."""
-        _LOGGER.debug("[%s] Notification: %s", _obfuscate_mac(self.mac_address), data.hex())
+        _LOGGER.debug(
+            "[%s] Notification: %s", _obfuscate_mac(self.mac_address), data.hex()
+        )
         self._notification_data.extend(data)
         if self._notification_event is not None:
             self._notification_event.set()
@@ -139,7 +141,9 @@ class PersistentBLEConnection:
             try:
                 if attempt > 0:
                     _LOGGER.info(
-                        "[%s] Retry %s/3...", _obfuscate_mac(self.mac_address), attempt + 1
+                        "[%s] Retry %s/3...",
+                        _obfuscate_mac(self.mac_address),
+                        attempt + 1,
                     )
                     await asyncio.sleep(5.0)
 
@@ -152,7 +156,8 @@ class PersistentBLEConnection:
 
                 if not device:
                     _LOGGER.debug(
-                        "[%s] Not found, running full scan...", _obfuscate_mac(self.mac_address)
+                        "[%s] Not found, running full scan...",
+                        _obfuscate_mac(self.mac_address),
                     )
                     devices = await BleakScanner.discover(timeout=10.0)
                     for found in devices:
@@ -161,7 +166,9 @@ class PersistentBLEConnection:
                             break
 
                 if not device:
-                    _LOGGER.warning("[%s] Device not found", _obfuscate_mac(self.mac_address))
+                    _LOGGER.warning(
+                        "[%s] Device not found", _obfuscate_mac(self.mac_address)
+                    )
                     continue
 
                 self.client = BleakClient(
@@ -172,7 +179,9 @@ class PersistentBLEConnection:
                 await self.client.connect()
 
                 if not self.client.is_connected:
-                    _LOGGER.warning("[%s] Connection failed", _obfuscate_mac(self.mac_address))
+                    _LOGGER.warning(
+                        "[%s] Connection failed", _obfuscate_mac(self.mac_address)
+                    )
                     continue
 
                 await self._setup_characteristics()
@@ -182,7 +191,9 @@ class PersistentBLEConnection:
                 )
 
                 self._connected = True
-                _LOGGER.info("[%s] Connected successfully", _obfuscate_mac(self.mac_address))
+                _LOGGER.info(
+                    "[%s] Connected successfully", _obfuscate_mac(self.mac_address)
+                )
                 return True
 
             except BleakError as err:
@@ -225,18 +236,24 @@ class PersistentBLEConnection:
         if self.client is None:
             return
 
-        _LOGGER.debug("[%s] Discovering characteristics...", _obfuscate_mac(self.mac_address))
+        _LOGGER.debug(
+            "[%s] Discovering characteristics...", _obfuscate_mac(self.mac_address)
+        )
         for service in self.client.services:
             for char in service.characteristics:
                 if char.uuid.lower() == WRITE_CHAR_UUID:
                     self._write_char = char.uuid
                     _LOGGER.debug(
-                        "[%s] Found write char: %s", _obfuscate_mac(self.mac_address), char.uuid
+                        "[%s] Found write char: %s",
+                        _obfuscate_mac(self.mac_address),
+                        char.uuid,
                     )
                 elif char.uuid.lower() == NOTIFY_CHAR_UUID:
                     self._notify_char = char.uuid
                     _LOGGER.debug(
-                        "[%s] Found notify char: %s", _obfuscate_mac(self.mac_address), char.uuid
+                        "[%s] Found notify char: %s",
+                        _obfuscate_mac(self.mac_address),
+                        char.uuid,
                     )
 
         if not self._notify_char:
@@ -324,7 +341,9 @@ class PersistentBLEConnection:
                     )
                 await self.client.write_gatt_char(self._write_char, request)
             except Exception as err:
-                _LOGGER.error("[%s] Write failed: %s", _obfuscate_mac(self.mac_address), err)
+                _LOGGER.error(
+                    "[%s] Write failed: %s", _obfuscate_mac(self.mac_address), err
+                )
                 self._connected = False
                 return None
 
@@ -418,9 +437,7 @@ class PersistentBLEConnection:
                         response.hex(),
                     )
             else:
-                _LOGGER.debug(
-                    "[%s] No response for %s", config.name, reg_info["name"]
-                )
+                _LOGGER.debug("[%s] No response for %s", config.name, reg_info["name"])
 
             await asyncio.sleep(REQUEST_DELAY)
 
@@ -428,9 +445,7 @@ class PersistentBLEConnection:
             all_data["__device"] = config.name
             all_data["__mac_address"] = config.mac_address
             all_data["__device_type"] = config.device_type
-            _LOGGER.info(
-                "[%s] Got %s data fields", config.name, len(all_data) - 3
-            )
+            _LOGGER.info("[%s] Got %s data fields", config.name, len(all_data) - 3)
         else:
             _LOGGER.warning("[%s] No data received from any registers", config.name)
 
@@ -462,7 +477,9 @@ class BLEDeviceManager:
         for mac, configs in devices_by_mac.items():
             self._connections[mac] = PersistentBLEConnection(mac, configs)
             if len(configs) > 1:
-                _LOGGER.info("Hub mode: %s devices on %s", len(configs), _obfuscate_mac(mac))
+                _LOGGER.info(
+                    "Hub mode: %s devices on %s", len(configs), _obfuscate_mac(mac)
+                )
 
         self.on_data_callback = on_data_callback
         self._running = False
@@ -505,7 +522,9 @@ class BLEDeviceManager:
 
         for mac, connection in self._connections.items():
             if not connection.is_connected:
-                _LOGGER.warning("[%s] Not connected, reconnecting...", _obfuscate_mac(mac))
+                _LOGGER.warning(
+                    "[%s] Not connected, reconnecting...", _obfuscate_mac(mac)
+                )
                 if not await connection.connect():
                     _LOGGER.error("[%s] Reconnection failed", _obfuscate_mac(mac))
                     for config in connection.device_configs:
@@ -538,9 +557,7 @@ class BLEDeviceManager:
                         self._device_data[device_key].mark_failed()
 
                 except Exception:  # pylint: disable=broad-except
-                    _LOGGER.error(
-                        "  %s: Error polling", config.name, exc_info=True
-                    )
+                    _LOGGER.error("  %s: Error polling", config.name, exc_info=True)
                     self._device_data[device_key].mark_failed()
 
                 await asyncio.sleep(1.0)
@@ -564,9 +581,7 @@ class BLEDeviceManager:
         _LOGGER.info("Device manager stopped")
 
 
-async def scan_for_devices(
-    timeout: float = 15.0, show_all: bool = False
-) -> List[Dict]:
+async def scan_for_devices(timeout: float = 15.0, show_all: bool = False) -> List[Dict]:
     """Scan for nearby Renogy BLE devices.
 
     Args:

@@ -10,7 +10,7 @@
         }
     ],
     "config_flow": true,
-    "dependencies": [
+    "after_dependencies": [
         "bluetooth"
     ],
     "documentation": "https://github.com/firstof9/ha-renogy/",

@@ -54,11 +54,15 @@ async def async_setup_entry(hass, entry, async_add_entities):
         for sensor in all_sensor_types:  # pylint: disable=consider-using-dict-items
             if sensor in device.keys():  # pylint: disable=consider-using-dict-items
                 sensors.append(
-                    RenogySensor(all_sensor_types[sensor], device_id, coordinator, entry)
+                    RenogySensor(
+                        all_sensor_types[sensor], device_id, coordinator, entry
+                    )
                 )
             elif "data" in device and sensor in device["data"].keys():
                 sensors.append(
-                    RenogySensor(all_sensor_types[sensor], device_id, coordinator, entry)
+                    RenogySensor(
+                        all_sensor_types[sensor], device_id, coordinator, entry
+                    )
                 )
 
     async_add_entities(sensors, False)

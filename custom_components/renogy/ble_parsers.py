@@ -624,9 +624,7 @@ def parse_inverter_pv_info(data: bytes, offset: int = 3) -> Dict[str, Any]:
 
     if len(data) >= offset + 12:
         charge_state = bytes_to_int(data, offset + 10, 2) & 0xFF
-        result["charging_status"] = INVERTER_CHARGING_STATE.get(
-            charge_state, "unknown"
-        )
+        result["charging_status"] = INVERTER_CHARGING_STATE.get(charge_state, "unknown")
 
     return result
 
@@ -669,12 +667,8 @@ def parse_inverter_statistics(data: bytes, offset: int = 3) -> Dict[str, Any]:
     if len(data) >= offset + 30:
         result["battery_charge_ah_total"] = bytes_to_int(data, offset + 14, 4)
         result["battery_discharge_ah_total"] = bytes_to_int(data, offset + 18, 4)
-        result["pv_generation_total"] = bytes_to_int(
-            data, offset + 22, 4, scale=0.1
-        )
-        result["load_consumption_total"] = bytes_to_int(
-            data, offset + 26, 4, scale=0.1
-        )
+        result["pv_generation_total"] = bytes_to_int(data, offset + 22, 4, scale=0.1)
+        result["load_consumption_total"] = bytes_to_int(data, offset + 26, 4, scale=0.1)
 
     return result
 
@@ -686,9 +680,7 @@ def parse_inverter_settings(data: bytes, offset: int = 3) -> Dict[str, Any]:
         return result
 
     output_priority = bytes_to_int(data, offset, 2)
-    result["output_priority"] = INVERTER_OUTPUT_PRIORITY.get(
-        output_priority, "unknown"
-    )
+    result["output_priority"] = INVERTER_OUTPUT_PRIORITY.get(output_priority, "unknown")
 
     output_freq = bytes_to_int(data, offset + 2, 2)
     result["output_frequency_setting"] = round(output_freq * 0.01, 1)

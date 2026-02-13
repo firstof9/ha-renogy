@@ -314,6 +314,13 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.TEMPERATURE,
     ),
+    "temperature": SensorEntityDescription(
+        key="temperature",
+        name="Temperature",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.TEMPERATURE,
+    ),
     "batteryVolts": SensorEntityDescription(
         key="batteryVolts",
         name="Battery Voltage",

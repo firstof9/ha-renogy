@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.helpers import config_validation as cv
+
+if TYPE_CHECKING:
+    from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from renogyapi import Renogy as api
 from renogyapi.exceptions import (
     NoDevices,
@@ -206,9 +208,7 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     # Step 2b: BLE configuration (manual)
     # ------------------------------------------------------------------
 
-    async def async_step_ble(
-        self, user_input: Dict[str, Any] = None
-    ) -> Dict[str, Any]:
+    async def async_step_ble(self, user_input: Dict[str, Any] = None) -> Dict[str, Any]:
         """Handle BLE configuration step."""
         self._errors = {}
 
@@ -372,19 +372,25 @@ def _get_ble_schema(
     }
 
     if show_mac:
-        schema_dict[vol.Required(
-            CONF_MAC_ADDRESS,
-            default=defaults.get(CONF_MAC_ADDRESS, ""),
-        )] = cv.string
+        schema_dict[
+            vol.Required(
+                CONF_MAC_ADDRESS,
+                default=defaults.get(CONF_MAC_ADDRESS, ""),
+            )
+        ] = cv.string
 
-    schema_dict[vol.Required(
-        CONF_DEVICE_TYPE,
-        default=defaults.get(CONF_DEVICE_TYPE, "controller"),
-    )] = vol.In(DEVICE_TYPES)
+    schema_dict[
+        vol.Required(
+            CONF_DEVICE_TYPE,
+            default=defaults.get(CONF_DEVICE_TYPE, "controller"),
+        )
+    ] = vol.In(DEVICE_TYPES)
 
-    schema_dict[vol.Optional(
-        CONF_DEVICE_ID,
-        default=defaults.get(CONF_DEVICE_ID, DEFAULT_DEVICE_ID),
-    )] = cv.positive_int
+    schema_dict[
+        vol.Optional(
+            CONF_DEVICE_ID,
+            default=defaults.get(CONF_DEVICE_ID, DEFAULT_DEVICE_ID),
+        )
+    ] = cv.positive_int
 
     return vol.Schema(schema_dict)
