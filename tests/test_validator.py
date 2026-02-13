@@ -8,6 +8,8 @@ from custom_components.renogy.ble_validator import (
     get_controller_validation_limits,
 )
 
+pytestmark = pytest.mark.asyncio
+
 
 async def test_get_controller_validation_limits():
     """Test limit scaling for system voltage."""
@@ -130,12 +132,10 @@ async def test_manager():
     assert "Dev1_controller" in stats
 
 
-"""Test detailed coverage for ble_validator.py."""
-import pytest
-from custom_components.renogy.ble_validator import DataValidator
+# Detailed coverage for ble_validator.py
 
 
-def test_validate_no_limits():
+async def test_validate_no_limits():
     """Test validation when no limits are defined (e.g. inverter)."""
     validator = DataValidator("Inverter", "inverter")
     data = {"some_val": 123}
@@ -144,7 +144,7 @@ def test_validate_no_limits():
     assert len(rejections) == 0
 
 
-def test_validate_non_numeric():
+async def test_validate_non_numeric():
     """Test validation ignores non-numeric values."""
     validator = DataValidator("Controller", "controller")
     # 'battery_voltage' has limits, but if we pass a string it should be ignored/skipped
@@ -154,7 +154,7 @@ def test_validate_non_numeric():
     assert len(rejections) == 0
 
 
-def test_log_truncation():
+async def test_log_truncation():
     """Test that rejection log is truncated at max size."""
     validator = DataValidator("Controller", "controller")
     # Max log is 100

@@ -1,20 +1,29 @@
-"""Test all BLE parsers."""
+import logging
+from unittest.mock import MagicMock, patch
 
 import pytest
+
 from custom_components.renogy.ble_parsers import (
-    parse_controller_device_info,
-    parse_controller_device_id,
+    DeviceType,
+    get_registers_for_device,
+    parse_battery_alarm_info,
+    parse_battery_cell_info,
+    parse_battery_device_info,
+    parse_battery_info,
+    parse_battery_temp_info,
     parse_controller_battery_type,
+    parse_controller_charging_info,
+    parse_controller_device_id,
+    parse_controller_device_info,
     parse_controller_faults,
     parse_controller_historical,
-    parse_battery_cell_info,
-    parse_battery_temp_info,
-    parse_battery_info,
-    parse_battery_alarm_info,
-    parse_battery_device_info,
-    parse_inverter_main_status,
     parse_inverter_device_info,
+    parse_inverter_main_status,
     parse_inverter_pv_info,
+    parse_inverter_settings,
+    parse_inverter_settings_status,
+    parse_inverter_statistics,
+    parse_response,
 )
 
 
@@ -220,12 +229,10 @@ async def test_parse_inverter_pv_info():
     assert result["pv_voltage"] == 12.0
 
 
-"""Test BLE parsers."""
-
-from custom_components.renogy.ble_parsers import parse_controller_charging_info
+# Additional parser tests
 
 
-def test_parse_controller_charging_info_full_faults():
+async def test_parse_controller_charging_info_full_faults():
     """Test parsing with full buffer including all faults."""
     # Create valid buffer of length 70 (3 (offset) + 67 bytes data).
     # Wait, offset=3 usually. So need 3 + 67 bytes?
@@ -253,7 +260,7 @@ def test_parse_controller_charging_info_full_faults():
     assert result["controller_faults"] == 0x12345678
 
 
-def test_parse_controller_charging_info_partial_faults():
+async def test_parse_controller_charging_info_partial_faults():
     """Test parsing with buffer limited to 68 bytes (34 registers)."""
     # Offset=3. Need 3 + 68 = 71 bytes total.
     # If len is 71, index goes up to 70. (0..70)
@@ -277,7 +284,7 @@ def test_parse_controller_charging_info_partial_faults():
     assert result["controller_faults"] == 0x1234
 
 
-def test_parse_controller_charging_info_too_short():
+async def test_parse_controller_charging_info_too_short():
     """Test parsing with insufficient buffer."""
     offset = 3
     data = bytearray(70)  # Just short of 71
@@ -290,24 +297,10 @@ def test_parse_controller_charging_info_too_short():
     assert result == {}
 
 
-"""Test detailed coverage for ble_parsers.py."""
-import pytest
-from custom_components.renogy.ble_parsers import (
-    parse_inverter_settings_status,
-    parse_inverter_statistics,
-    parse_inverter_settings,
-    parse_response,
-    get_registers_for_device,
-    DeviceType,
-)
+# Detailed coverage for ble_parsers.py
 
 
-def create_buffer(length, offset=3):
-    """Create a buffer with given length and offset."""
-    return bytearray([0] * (length + offset))
-
-
-def test_parse_inverter_settings_status():
+async def test_parse_inverter_settings_status():
     """Test parsing inverter settings status."""
     # Short data
     assert parse_inverter_settings_status(b"\x00" * 10) == {}
@@ -341,7 +334,7 @@ def test_parse_inverter_settings_status():
     assert result["load_percentage"] == 50
 
 
-def test_parse_inverter_statistics():
+async def test_parse_inverter_statistics():
     """Test parsing inverter statistics."""
     # Short data
     assert parse_inverter_statistics(b"\x00" * 5) == {}
@@ -367,7 +360,7 @@ def test_parse_inverter_statistics():
     assert result["battery_discharge_ah_total"] == 100
 
 
-def test_parse_inverter_settings():
+async def test_parse_inverter_settings():
     """Test parsing inverter settings."""
     # Short data
     assert parse_inverter_settings(b"\x00" * 5) == {}
@@ -395,7 +388,7 @@ def test_parse_inverter_settings():
     assert result["power_saving_mode"] is True
 
 
-def test_parse_response_edge_cases():
+async def test_parse_response_edge_cases():
     """Test parse_response edge cases."""
 
     # Unknown Device Type
@@ -415,8 +408,6 @@ def test_parse_response_edge_cases():
     # We need to trigger an exception in the parser function.
     # We can patch PARSERS[DeviceType.CONTROLLER][12] to raise
 
-    from unittest.mock import patch
-
     with patch.dict(
         "custom_components.renogy.ble_parsers.PARSERS",
         {
@@ -429,34 +420,21 @@ def test_parse_response_edge_cases():
         assert result == {}
 
 
-def test_get_registers_for_device_unknown():
+async def test_get_registers_for_device_unknown():
     """Test get_registers_for_device with unknown type."""
     result = get_registers_for_device("UNKNOWN")
     assert result == []
 
 
-"""Deep coverage tests for ble_parsers.py."""
-import pytest
-from custom_components.renogy.ble_parsers import (
-    parse_controller_battery_type,
-    parse_controller_faults,
-    parse_controller_historical,
-    parse_controller_device_info,
-    parse_controller_device_id,
-    parse_controller_charging_info,
-)
+# Deep coverage tests for ble_parsers.py
 
 
-def create_buffer(length, offset=3):
-    return bytearray([0] * (length + offset))
-
-
-def test_parse_controller_battery_type_short():
+async def test_parse_controller_battery_type_short():
     """Test short data for battery type."""
     assert parse_controller_battery_type(b"\x00" * 3) == {}
 
 
-def test_parse_controller_faults_bits():
+async def test_parse_controller_faults_bits():
     """Test fault parsing with specific bits."""
     offset = 3
     data = create_buffer(4, offset)
@@ -482,51 +460,32 @@ def test_parse_controller_faults_bits():
     assert result["warning_count"] == 1
 
 
-def test_parse_controller_historical_short():
+async def test_parse_controller_historical_short():
     """Test historical data short."""
     # Needs 42 bytes + offset
     assert parse_controller_historical(b"\x00" * 40) == {}
 
 
-def test_parse_controller_device_info_short():
+async def test_parse_controller_device_info_short():
     """Test device info short."""
     # registers 0x000A - 0x0011 (8 registers = 16 bytes)
     # limit check is likely around 16
     assert parse_controller_device_info(b"\x00" * 10) == {}
 
 
-def test_parse_controller_device_id_short():
+async def test_parse_controller_device_id_short():
     """Test device id short."""
     # registers 0x001A (1 register = 2 bytes)
     assert parse_controller_device_id(b"\x00" * 3) == {}
 
 
-def test_parse_controller_charging_info_short():
+async def test_parse_controller_charging_info_short():
     """Test charging info short."""
     # registers 0x0100 -> many
     assert parse_controller_charging_info(b"\x00" * 20) == {}
 
 
-"""Final coverage tests for ble_parsers.py."""
-import pytest
-from custom_components.renogy.ble_parsers import (
-    parse_controller_charging_info,
-    parse_battery_cell_info,
-    parse_battery_temp_info,
-    parse_battery_info,
-    parse_battery_alarm_info,
-    parse_battery_device_info,
-    parse_inverter_main_status,
-    parse_inverter_device_info,
-    parse_inverter_pv_info,
-    parse_inverter_settings_status,
-    parse_inverter_statistics,
-    parse_inverter_settings,
-)
-
-
-def create_buffer(length, offset=3):
-    return bytearray([0] * (length + offset))
+# Final coverage tests for ble_parsers.py
 
 
 # =================================================================================
@@ -534,7 +493,7 @@ def create_buffer(length, offset=3):
 # =================================================================================
 
 
-def test_parse_controller_charging_info_branches():
+async def test_parse_controller_charging_info_branches():
     """Test branches in parse_controller_charging_info."""
     offset = 3
     # 1. Short data
@@ -578,7 +537,7 @@ def test_parse_controller_charging_info_branches():
 # =================================================================================
 
 
-def test_parse_battery_short_data():
+async def test_parse_battery_short_data():
     """Test short data returns for battery parsers."""
     assert parse_battery_cell_info(b"\x00" * 3) == {}
     assert parse_battery_temp_info(b"\x00" * 3) == {}
@@ -595,7 +554,7 @@ def test_parse_battery_short_data():
     assert parse_battery_device_info(b"\x00" * 10) == {}
 
 
-def test_parse_battery_info_logic():
+async def test_parse_battery_info_logic():
     """Test logic in parse_battery_info."""
     offset = 3
     data = create_buffer(12, offset)
@@ -620,7 +579,7 @@ def test_parse_battery_info_logic():
     assert result["soc"] == 50.0
 
 
-def test_parse_battery_alarm_info_coverage():
+async def test_parse_battery_alarm_info_coverage():
     """Test detailed alarm parsing."""
     offset = 3
     data = create_buffer(20, offset)
@@ -667,7 +626,7 @@ def test_parse_battery_alarm_info_coverage():
 # =================================================================================
 
 
-def test_parse_inverter_short_data():
+async def test_parse_inverter_short_data():
     """Test short data for inverter parsers."""
     assert parse_inverter_main_status(b"\x00" * 10) == {}
     assert parse_inverter_device_info(b"\x00" * 40) == {}
@@ -678,7 +637,7 @@ def test_parse_inverter_short_data():
     assert parse_inverter_settings(b"\x00" * 5) == {}
 
 
-def test_parse_inverter_main_status_logic():
+async def test_parse_inverter_main_status_logic():
     """Test logic in parse_inverter_main_status."""
     offset = 3
     data = create_buffer(20, offset)
@@ -707,7 +666,7 @@ def test_parse_inverter_main_status_logic():
     assert "input_frequency" in result
 
 
-def test_parse_inverter_pv_info_branches():
+async def test_parse_inverter_pv_info_branches():
     """Test branches in parse_inverter_pv_info."""
     offset = 3
     # Length >= 12 checks
@@ -721,7 +680,7 @@ def test_parse_inverter_pv_info_branches():
     assert result["charging_status"] == "unknown"
 
 
-def test_parse_inverter_settings_status_branches():
+async def test_parse_inverter_settings_status_branches():
     """Test intermediate length checks."""
     offset = 3
     # 1. < 16 (but guard is at 30, so anything < 30 returns empty)
@@ -735,7 +694,7 @@ def test_parse_inverter_settings_status_branches():
     assert "load_percentage" in res
 
 
-def test_parse_inverter_statistics_branches():
+async def test_parse_inverter_statistics_branches():
     """Test branches in parse_inverter_statistics."""
     offset = 3
     # 1. >= 10 but < 30
@@ -748,22 +707,10 @@ def test_parse_inverter_statistics_branches():
     assert "battery_charge_ah_total" in res
 
 
-"""Refinement coverage tests for ble_parsers.py."""
-import logging
-from unittest.mock import patch, MagicMock
-from custom_components.renogy.ble_parsers import (
-    parse_battery_alarm_info,
-    parse_inverter_main_status,
-    parse_response,
-    DeviceType,
-)
+# Refinement coverage tests for ble_parsers.py
 
 
-def create_buffer(length, offset=3):
-    return bytearray([0] * (length + offset))
-
-
-def test_parse_battery_alarm_more_coverage():
+async def test_parse_battery_alarm_more_coverage():
     """Cover remaining alarm branches."""
     offset = 3
     data = create_buffer(20, offset)
@@ -794,7 +741,7 @@ def test_parse_battery_alarm_more_coverage():
     assert "cell_11_voltage_error" in result["warnings"]
 
 
-def test_parse_inverter_main_status_low_faults_and_power():
+async def test_parse_inverter_main_status_low_faults_and_power():
     """Cover low faults loop and input power calc."""
     offset = 3
     data = create_buffer(20, offset)
@@ -818,7 +765,7 @@ def test_parse_inverter_main_status_low_faults_and_power():
     assert result["input_power"] == 120.0
 
 
-def test_parse_response_debug_log():
+async def test_parse_response_debug_log():
     """Test debug log in parse_response."""
     with patch("custom_components.renogy.ble_parsers._LOGGER") as mock_logger:
         # Valid parsing
@@ -832,16 +779,10 @@ def test_parse_response_debug_log():
         assert mock_logger.debug.called
 
 
-"""Final refinement coverage tests for ble_parsers.py."""
-import pytest
-from custom_components.renogy.ble_parsers import parse_battery_alarm_info
+# Final refinement coverage tests for ble_parsers.py
 
 
-def create_buffer(length, offset=3):
-    return bytearray([0] * (length + offset))
-
-
-def test_parse_battery_alarm_remaining_variants():
+async def test_parse_battery_alarm_remaining_variants():
     """Cover remaining alarm code variants 2 and 3."""
     offset = 3
     data = create_buffer(20, offset)

@@ -1,20 +1,24 @@
 """Test BLE client implementation."""
 
 import asyncio
+import logging
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
-from custom_components.renogy.ble_client import (
-    PersistentBLEConnection,
-    DeviceConfig,
-    BLEDeviceManager,
-    DeviceData,
-    scan_for_devices,
-    DeviceType,
-)
-from bleak.exc import BleakError
-from bleak.backends.device import BLEDevice
 from bleak.backends.characteristic import BleakGATTCharacteristic
+from bleak.backends.device import BLEDevice
+from bleak.exc import BleakError
+
+from custom_components.renogy.ble_client import (
+    BLEDeviceManager,
+    DeviceConfig,
+    DeviceData,
+    DeviceType,
+    PersistentBLEConnection,
+    scan_for_devices,
+)
+
+pytestmark = pytest.mark.asyncio
 
 # Mock UUIDs
 WRITE_UUID = "0000ffd1-0000-1000-8000-00805f9b34fb"
@@ -232,35 +236,19 @@ async def test_manager_stop(mock_bleak_client):
         instance.disconnect.assert_awaited()
 
 
-# =========================================================================================
 # Coverage Tests
-# =========================================================================================
 
-# Mock UUIDs matches what is in ble_client.py
-# (Redefined here for clarity in appended tests, though could use top-level constants)
-WRITE_UUID = "0000ffd1-0000-1000-8000-00805f9b34fb"
-NOTIFY_UUID = "0000fff1-0000-1000-8000-00805f9b34fb"
-
-# Additional imports for coverage
-from bleak.exc import BleakError
-from bleak.backends.device import BLEDevice
-from custom_components.renogy.ble_client import (
-    DeviceData,
-    scan_for_devices,
-    DeviceType,
-)
-
-pytestmark = pytest.mark.asyncio
+# Additional tests for coverage
 
 
-def test_device_config_enum_error():
+async def test_device_config_enum_error():
     """Test invalid device type enum conversion."""
     conf = DeviceConfig("test", "AA:BB:CC:DD:EE:FF", "toaster")
     with pytest.raises(ValueError):
         conf.get_device_type_enum()
 
 
-def test_device_data_logic():
+async def test_device_data_logic():
     """Test DeviceData update and failure logic."""
     conf = DeviceConfig("test", "AA:BB:CC:DD:EE:FF", "controller")
     data = DeviceData(config=conf)
@@ -513,21 +501,7 @@ async def test_scan_failure():
         assert results == []
 
 
-"""Deep coverage tests for ble_client.py."""
-import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
-import pytest
-from bleak.exc import BleakError
-from bleak.backends.device import BLEDevice
-from bleak.backends.characteristic import BleakGATTCharacteristic
-
-from custom_components.renogy.ble_client import (
-    DeviceConfig,
-    PersistentBLEConnection,
-    BLEDeviceManager,
-)
-
-pytestmark = pytest.mark.asyncio
+# Deep coverage tests for ble_client.py
 
 
 async def test_connect_already_connected():
@@ -647,12 +621,29 @@ async def test_read_registers_client_none_before_write():
         assert data is None
 
 
-async def test_poll_device_no_data_warning():
-    """Test poll_device logging warning when no data is parsed but response existed?"""
-    # Actually if response is None, it logs 'No response'.
-    # If response valid but parsed data empty?
-    # Or if validate_modbus_response failed?
-    pass  # We likely covered this.
+async def test_poll_device_no_data_warning(caplog):
+    """Test poll_device logging warning when no data is parsed."""
+    config = DeviceConfig("dev1", "AA:BB:CC:DD:EE:FF", "controller")
+    conn = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [config])
+
+    fake_regs = [{"name": "fake", "register": 1, "words": 1}]
+
+    with patch(
+        "custom_components.renogy.ble_client.get_registers_for_device",
+        return_value=fake_regs,
+    ), patch.object(
+        conn, "read_registers", return_value=b"\x01\x03\x02\x00\x00\x00\x00"
+    ), patch(
+        "custom_components.renogy.ble_client.validate_modbus_response",
+        return_value=True,
+    ), patch(
+        "custom_components.renogy.ble_client.parse_response", return_value={}
+    ):
+
+        with caplog.at_level(logging.WARNING):
+            data = await conn.poll_device(config)
+            assert data == {}
+            assert "No data received from any registers" in caplog.text
 
 
 async def test_connect_all_failures():
@@ -717,19 +708,7 @@ async def test_poll_all_callback_exception():
     assert manager._device_data[key].consecutive_failures > 0
 
 
-"""Additional coverage tests for ble_client.py."""
-import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
-import pytest
-from bleak.exc import BleakError
-from bleak.backends.device import BLEDevice
-from custom_components.renogy.ble_client import (
-    DeviceConfig,
-    PersistentBLEConnection,
-    BLEDeviceManager,
-)
-
-pytestmark = pytest.mark.asyncio
+# Additional coverage tests for ble_client.py
 
 
 async def test_read_registers_no_notification_event():

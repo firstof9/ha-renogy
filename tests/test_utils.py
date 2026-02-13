@@ -116,15 +116,10 @@ async def test_format_mac_address():
         format_mac_address("invalid")
 
 
-"""Test detailed coverage for ble_utils.py."""
-import pytest
-from custom_components.renogy.ble_utils import (
-    bytes_to_int,
-    validate_modbus_response,
-)
+# Detailed coverage for ble_utils.py
 
 
-def test_bytes_to_int_coverage():
+async def test_bytes_to_int_coverage():
     """Test bytes_to_int edge cases."""
 
     # Test length 4 signed
@@ -139,7 +134,7 @@ def test_bytes_to_int_coverage():
     assert bytes_to_int(data, 0, 5) == 0
 
 
-def test_validate_modbus_response_coverage():
+async def test_validate_modbus_response_coverage():
     """Test validate_modbus_response edge cases."""
 
     # Error response (Function code & 0x80)

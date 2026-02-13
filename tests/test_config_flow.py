@@ -1,17 +1,16 @@
-"""Test renogy config flow."""
-
 import logging
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from homeassistant import config_entries, setup
 from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAIN
-from homeassistant.data_entry_flow import FlowResult, FlowResultType
 from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
+from homeassistant.data_entry_flow import FlowResult, FlowResultType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from renogyapi.exceptions import UrlNotFound
 
+from custom_components.renogy.config_flow import RenogyFlowHandler
 from custom_components.renogy.const import (
-    DOMAIN,
     CONF_ACCESS_KEY,
     CONF_CONNECTION_TYPE,
     CONF_DEVICE_ID,
@@ -21,6 +20,7 @@ from custom_components.renogy.const import (
     CONF_SECRET_KEY,
     CONNECTION_TYPE_BLE,
     CONNECTION_TYPE_CLOUD,
+    DOMAIN,
 )
 
 from .const import CONFIG_DATA
@@ -710,8 +710,6 @@ async def test_form_ble(hass):
 
 async def test_form_bluetooth_discovery(hass):
     """Test Bluetooth auto-discovery creates entry."""
-    from unittest.mock import MagicMock
-
     await setup.async_setup_component(hass, "persistent_notification", {})
 
     # Simulate a BluetoothServiceInfoBleak discovery
@@ -762,7 +760,6 @@ async def test_form_bluetooth_discovery(hass):
 
 async def test_bluetooth_discovery_already_configured(hass):
     """Test Bluetooth discovery aborts when device is already configured."""
-    from unittest.mock import MagicMock
 
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -797,24 +794,7 @@ async def test_bluetooth_discovery_already_configured(hass):
     assert result["reason"] == "already_configured"
 
 
-"""Test extended BLE config flow."""
-
-from unittest.mock import patch
-
-import pytest
-from homeassistant import config_entries, setup
-from homeassistant.data_entry_flow import FlowResultType
-from pytest_homeassistant_custom_component.common import MockConfigEntry
-
-from custom_components.renogy.const import (
-    DOMAIN,
-    CONF_CONNECTION_TYPE,
-    CONF_DEVICE_ID,
-    CONF_DEVICE_TYPE,
-    CONF_MAC_ADDRESS,
-)
-
-pytestmark = pytest.mark.asyncio
+# Extended BLE config flow tests
 
 
 async def test_form_ble_invalid_mac(hass):
@@ -883,26 +863,7 @@ async def test_form_ble_duplicate_mac(hass):
     assert result["reason"] == "already_configured"
 
 
-"""Test detailed coverage for config_flow.py."""
-import pytest
-from unittest.mock import MagicMock, patch
-from homeassistant import config_entries, setup
-from homeassistant.data_entry_flow import FlowResultType
-from custom_components.renogy.const import (
-    DOMAIN,
-    CONF_CONNECTION_TYPE,
-    CONF_MAC_ADDRESS,
-    CONF_NAME,
-    CONF_DEVICE_TYPE,
-    CONF_DEVICE_ID,
-    CONF_SECRET_KEY,
-    CONF_ACCESS_KEY,
-)
-from custom_components.renogy.config_flow import RenogyFlowHandler
-from renogyapi.exceptions import UrlNotFound
-from pytest_homeassistant_custom_component.common import MockConfigEntry
-
-pytestmark = pytest.mark.asyncio
+# Detailed coverage for config_flow.py
 
 
 async def test_bluetooth_confirm_no_device(hass):
