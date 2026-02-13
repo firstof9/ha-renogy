@@ -218,6 +218,8 @@ async def test_parse_inverter_pv_info():
 
     result = parse_inverter_pv_info(bytes(data), offset)
     assert result["pv_voltage"] == 12.0
+
+
 """Test BLE parsers."""
 
 from custom_components.renogy.ble_parsers import parse_controller_charging_info

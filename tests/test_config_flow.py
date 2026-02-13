@@ -795,6 +795,8 @@ async def test_bluetooth_discovery_already_configured(hass):
 
     assert result["type"] == FlowResultType.ABORT
     assert result["reason"] == "already_configured"
+
+
 """Test extended BLE config flow."""
 
 from unittest.mock import patch
@@ -879,6 +881,8 @@ async def test_form_ble_duplicate_mac(hass):
 
     assert result["type"] == FlowResultType.ABORT
     assert result["reason"] == "already_configured"
+
+
 """Test detailed coverage for config_flow.py."""
 import pytest
 from unittest.mock import MagicMock, patch
@@ -899,6 +903,7 @@ from renogyapi.exceptions import UrlNotFound
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 pytestmark = pytest.mark.asyncio
+
 
 async def test_bluetooth_confirm_no_device(hass):
     """Test bluetooth confirm aborts if no device discovered."""
@@ -924,7 +929,7 @@ async def test_cloud_url_not_found(hass):
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"connection_type": "cloud"}
     )
-    
+
     with patch("renogyapi.Renogy.get_devices", side_effect=UrlNotFound):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
@@ -934,7 +939,7 @@ async def test_cloud_url_not_found(hass):
                 CONF_ACCESS_KEY: "access",
             },
         )
-    
+
     assert result["type"] == FlowResultType.FORM
     assert result["errors"][CONF_NAME] == "api_error"
 
@@ -948,7 +953,7 @@ async def test_ble_invalid_hex_mac(hass):
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"connection_type": "ble"}
     )
-    
+
     # Valid length, valid colons, but 'ZZ' is not hex
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
@@ -959,7 +964,7 @@ async def test_ble_invalid_hex_mac(hass):
             CONF_DEVICE_ID: 255,
         },
     )
-    
+
     assert result["type"] == FlowResultType.FORM
     assert result["errors"][CONF_MAC_ADDRESS] == "invalid_mac"
 
@@ -969,13 +974,13 @@ async def test_reconfigure_entry_missing(hass):
     # We can fake this by calling async_step_reconfigure on a fresh flow instance
     # that hasn't been initialized with context properly via the manager,
     # or just mocking _get_reconfigure_entry
-    
+
     flow = RenogyFlowHandler()
     flow.hass = hass
     # Mock _get_reconfigure_entry to return None
     with patch.object(flow, "_get_reconfigure_entry", return_value=None):
         result = await flow.async_step_reconfigure()
-        
+
     assert result["type"] == FlowResultType.ABORT
     assert result["reason"] == "reconfigure_entry_missing"
 
@@ -992,7 +997,7 @@ async def test_reconfigure_ble_success(hass):
         },
     )
     entry.add_to_hass(hass)
-    
+
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={
@@ -1001,22 +1006,21 @@ async def test_reconfigure_ble_success(hass):
         },
     )
     assert result["type"] == FlowResultType.FORM
-    
+
     new_data = {
         CONF_NAME: "New Name",
         CONF_MAC_ADDRESS: "11:22:33:44:55:66",
         CONF_DEVICE_TYPE: "battery",
         CONF_DEVICE_ID: 1,
     }
-    
+
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        user_input=new_data
+        result["flow_id"], user_input=new_data
     )
-    
+
     assert result["type"] == FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
-    
+
     assert entry.data[CONF_NAME] == "New Name"
     assert entry.data[CONF_MAC_ADDRESS] == "11:22:33:44:55:66"
 
@@ -1033,7 +1037,7 @@ async def test_reconfigure_ble_invalid_mac(hass):
         },
     )
     entry.add_to_hass(hass)
-    
+
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={
@@ -1041,19 +1045,17 @@ async def test_reconfigure_ble_invalid_mac(hass):
             "entry_id": entry.entry_id,
         },
     )
-    
+
     # 1. Bad length/format
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        user_input={CONF_MAC_ADDRESS: "INVALID"}
+        result["flow_id"], user_input={CONF_MAC_ADDRESS: "INVALID"}
     )
     assert result["type"] == FlowResultType.FORM
     assert result["errors"][CONF_MAC_ADDRESS] == "invalid_mac"
-    
+
     # 2. Bad Hex
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        user_input={CONF_MAC_ADDRESS: "AA:BB:CC:DD:EE:ZZ"}
+        result["flow_id"], user_input={CONF_MAC_ADDRESS: "AA:BB:CC:DD:EE:ZZ"}
     )
     assert result["type"] == FlowResultType.FORM
     assert result["errors"][CONF_MAC_ADDRESS] == "invalid_mac"
@@ -1071,7 +1073,7 @@ async def test_reconfigure_cloud_url_not_found(hass):
         },
     )
     entry.add_to_hass(hass)
-    
+
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={
@@ -1079,15 +1081,15 @@ async def test_reconfigure_cloud_url_not_found(hass):
             "entry_id": entry.entry_id,
         },
     )
-    
+
     with patch("renogyapi.Renogy.get_devices", side_effect=UrlNotFound):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             user_input={
                 CONF_SECRET_KEY: "new",
                 CONF_ACCESS_KEY: "new",
-            }
+            },
         )
-        
+
     assert result["type"] == FlowResultType.FORM
     assert result["errors"][CONF_NAME] == "api_error"

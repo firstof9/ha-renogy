@@ -380,6 +380,8 @@ async def test_async_remove_config_entry_device_integration(
             result = await async_remove_config_entry_device(hass, entry, device)
             # Should return True because entry doesn't have runtime_data
             assert result is True
+
+
 """Test detailed coverage for __init__.py."""
 import pytest
 from unittest.mock import MagicMock, patch, AsyncMock
@@ -399,6 +401,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 pytestmark = pytest.mark.asyncio
 
+
 async def test_setup_ble_success(hass):
     """Test successful BLE setup."""
     entry = MockConfigEntry(
@@ -412,27 +415,31 @@ async def test_setup_ble_success(hass):
     )
     entry.add_to_hass(hass)
 
-    with patch("custom_components.renogy.ble_client.BLEDeviceManager") as mock_manager_cls:
+    with patch(
+        "custom_components.renogy.ble_client.BLEDeviceManager"
+    ) as mock_manager_cls:
         mock_manager = mock_manager_cls.return_value
-        mock_manager.poll_all = AsyncMock(return_value={
-            "ble_AA:BB:CC:DD:EE:FF": {
-                "__device": "Test Device",
-                "__device_type": "controller",
-                "__mac_address": "AA:BB:CC:DD:EE:FF",
-                "battery_voltage": 12.0
+        mock_manager.poll_all = AsyncMock(
+            return_value={
+                "ble_AA:BB:CC:DD:EE:FF": {
+                    "__device": "Test Device",
+                    "__device_type": "controller",
+                    "__mac_address": "AA:BB:CC:DD:EE:FF",
+                    "battery_voltage": 12.0,
+                }
             }
-        })
+        )
         mock_manager.disconnect_all = AsyncMock()
-        
+
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
-        
+
         assert entry.state == config_entries.ConfigEntryState.LOADED
         assert hass.data[DOMAIN][entry.entry_id] is not None
-        
+
         await hass.config_entries.async_unload(entry.entry_id)
         await hass.async_block_till_done()
-        
+
         assert entry.state == config_entries.ConfigEntryState.NOT_LOADED
         mock_manager.disconnect_all.assert_called()
 
@@ -450,16 +457,20 @@ async def test_setup_ble_exception_in_refresh(hass):
     )
     entry.add_to_hass(hass)
 
-    with patch("custom_components.renogy.ble_client.BLEDeviceManager") as mock_manager_cls, \
-         patch("custom_components.renogy.BLEUpdateCoordinator.async_refresh", side_effect=Exception("Major Fail")):
-        
+    with patch(
+        "custom_components.renogy.ble_client.BLEDeviceManager"
+    ) as mock_manager_cls, patch(
+        "custom_components.renogy.BLEUpdateCoordinator.async_refresh",
+        side_effect=Exception("Major Fail"),
+    ):
+
         mock_manager = mock_manager_cls.return_value
         mock_manager.disconnect_all = AsyncMock()
-        
+
         # async_setup catches Exception -> ConfigEntryNotReady -> SETUP_RETRY
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
-        
+
         assert entry.state == config_entries.ConfigEntryState.SETUP_RETRY
         mock_manager.disconnect_all.assert_called()
 
@@ -478,15 +489,17 @@ async def test_setup_ble_refresh_failed(hass):
     )
     entry.add_to_hass(hass)
 
-    with patch("custom_components.renogy.ble_client.BLEDeviceManager") as mock_manager_cls:
+    with patch(
+        "custom_components.renogy.ble_client.BLEDeviceManager"
+    ) as mock_manager_cls:
         mock_manager = mock_manager_cls.return_value
         # return empty to trigger UpdateFailed in _async_update_data
         mock_manager.poll_all = AsyncMock(return_value={})
         mock_manager.disconnect_all = AsyncMock()
-        
+
         await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
-        
+
         assert entry.state == config_entries.ConfigEntryState.SETUP_RETRY
         mock_manager.disconnect_all.assert_called()
 
@@ -494,16 +507,16 @@ async def test_setup_ble_refresh_failed(hass):
 async def test_ble_coordinator_logic_fail(hass):
     """Test BLE Coordinator specific failure logic (lines 318, 324)."""
     from custom_components.renogy import BLEUpdateCoordinator
-    
+
     config = MockConfigEntry(data={CONF_NAME: "Test", CONF_MAC_ADDRESS: "AA..."})
     manager = MagicMock()
     coordinator = BLEUpdateCoordinator(hass, 30, config, manager)
-    
+
     # 1. poll_all raises Exception -> UpdateFailed (lines 318-319)
     manager.poll_all = AsyncMock(side_effect=Exception("Poll Error"))
     with pytest.raises(UpdateFailed):
         await coordinator._async_update_data()
-        
+
     # 2. poll_all returns empty -> UpdateFailed (line 324)
     manager.poll_all = AsyncMock(return_value={})
     coordinator._data = {}
@@ -514,41 +527,47 @@ async def test_ble_coordinator_logic_fail(hass):
 async def test_ble_coordinator_logic_rejection(hass):
     """Test BLE Coordinator rejection logic (line 338)."""
     from custom_components.renogy import BLEUpdateCoordinator
-    
+
     config = MockConfigEntry(data={CONF_NAME: "Test", CONF_MAC_ADDRESS: "AA..."})
     manager = MagicMock()
     coordinator = BLEUpdateCoordinator(hass, 30, config, manager)
-    
+
     # We need to trigger validator to return rejections
-    with patch("custom_components.renogy.ble_validator.DataValidatorManager.validate_device_data") as mock_validate:
+    with patch(
+        "custom_components.renogy.ble_validator.DataValidatorManager.validate_device_data"
+    ) as mock_validate:
         mock_validate.return_value = ({"valid": "data"}, ["rejection1"])
-        
-        manager.poll_all = AsyncMock(return_value={
-            "dev1": {
-                "__device": "dev1",
-                "__device_type": "controller",
-                "__mac_address": "AA...",
-                "val": 100
+
+        manager.poll_all = AsyncMock(
+            return_value={
+                "dev1": {
+                    "__device": "dev1",
+                    "__device_type": "controller",
+                    "__mac_address": "AA...",
+                    "val": 100,
+                }
             }
-        })
-        
+        )
+
         data = await coordinator._async_update_data()
         assert "ble_AA..." in data
 
 
 async def test_cloud_runtime_error(hass):
     """Test cloud setup with RuntimeError (line 278)."""
-    entry = MockConfigEntry(data={
-        CONF_CONNECTION_TYPE: "cloud",
-        CONF_NAME: "Cloud",
-        CONF_SECRET_KEY: "s",
-        CONF_ACCESS_KEY: "a"
-    })
+    entry = MockConfigEntry(
+        data={
+            CONF_CONNECTION_TYPE: "cloud",
+            CONF_NAME: "Cloud",
+            CONF_SECRET_KEY: "s",
+            CONF_ACCESS_KEY: "a",
+        }
+    )
     entry.add_to_hass(hass)
-    
+
     manager = MagicMock()
     manager.get_devices = AsyncMock(side_effect=[RuntimeError("Oops"), {}])
-    
+
     coordinator = RenogyUpdateCoordinator(hass, 30, entry, manager)
     await coordinator.update_sensors()
 
@@ -556,13 +575,13 @@ async def test_cloud_runtime_error(hass):
 async def test_ble_coordinator_logic_success_existing_data(hass):
     """Test BLE Coordinator returns existing data if poll empty (line 323)."""
     from custom_components.renogy import BLEUpdateCoordinator
-    
+
     config = MockConfigEntry(data={CONF_NAME: "Test", CONF_MAC_ADDRESS: "AA..."})
     manager = MagicMock()
-    
+
     coordinator = BLEUpdateCoordinator(hass, 30, config, manager)
     coordinator._data = {"some": "data"}
     manager.poll_all = AsyncMock(return_value={})
-    
+
     data = await coordinator._async_update_data()
     assert data == {"some": "data"}
