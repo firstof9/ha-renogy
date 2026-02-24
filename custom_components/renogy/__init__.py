@@ -10,6 +10,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from renogyapi import Renogy as api
 
@@ -369,10 +370,14 @@ class BLEUpdateCoordinator(DataUpdateCoordinator):
 class RenogyManager:
     """Renogy connection manager."""
 
-    def __init__(  # pylint: disable-next=unused-argument
+    def __init__(
         self, hass: HomeAssistant, config_entry: ConfigEntry
     ) -> None:
         """Initialize."""
         self._secret_key = config_entry.data.get(CONF_SECRET_KEY)
         self._access_key = config_entry.data.get(CONF_ACCESS_KEY)
-        self.api = api(secret_key=self._secret_key, access_key=self._access_key)
+        self.api = api(
+            secret_key=self._secret_key,
+            access_key=self._access_key,
+            session=async_get_clientsession(hass),
+        )
