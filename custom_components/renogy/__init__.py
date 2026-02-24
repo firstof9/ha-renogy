@@ -370,7 +370,7 @@ class BLEUpdateCoordinator(DataUpdateCoordinator):
 class RenogyManager:
     """Renogy connection manager."""
 
-    def __init__(  # pylint: disable-next=unused-argument
+    def __init__(
         self, hass: HomeAssistant, config_entry: ConfigEntry
     ) -> None:
         """Initialize."""
