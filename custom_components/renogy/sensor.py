@@ -91,7 +91,8 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
         self._state = None
 
         self._attr_icon = sensor_description.icon
-        self._attr_name = f"{coordinator.data[device_id]['name']} {self._name}"
+        device_name = coordinator.data[device_id].get("name", device_id)
+        self._attr_name = f"{device_name} {self._name}"
         self._attr_unique_id = f"{self._name}_{device_id}"
 
     @property
@@ -114,18 +115,23 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
             self._state = None
             return self._state
 
+        val = data[self._type]
+        if val is None or not isinstance(val, list | tuple) or len(val) == 0:
+            self._state = None
+            return self._state
+
         if self._type == "output":
             try:
-                value = OUTPUT_MODES[data[self._type][0]]
+                value = OUTPUT_MODES[val[0]]
             except KeyError:
                 value = None
-        elif self._type == "batteryType" and isinstance(data[self._type][0], int):
+        elif self._type == "batteryType" and isinstance(val[0], int):
             try:
-                value = BATTERY_TYPE[data[self._type][0]]
+                value = BATTERY_TYPE[val[0]]
             except KeyError:
                 value = None
         else:
-            value = data[self._type][0]
+            value = val[0]
         self._state = value
         _LOGGER.debug("Sensor [%s] updated value: %s", self._type, self._state)
         return self._state

@@ -67,12 +67,14 @@ async def test_binary_sensor_unsupported(hass, mock_api, caplog):
     entity_id = registry.async_get_entity_id(
         "binary_sensor", DOMAIN, f"Heating Mode_{device_id}"
     )
+    assert entity_id is not None, f"Entity ID for {device_id} heating mode not found"
 
     # This is a bit hacky but we need the actual entity object
     from homeassistant.helpers.entity_component import EntityComponent
 
     component: EntityComponent = hass.data["binary_sensor"]
     entity = component.get_entity(entity_id)
+    assert entity is not None, f"Entity with ID {entity_id} not found in component"
 
     with caplog.at_level(logging.INFO):
         # Remove the key to trigger the unsupported branch in is_on
@@ -105,10 +107,18 @@ async def test_sensor_coverage(hass, mock_api, caplog):
     entity_id = "sensor.rbt100lfp12sh_g1_present_voltage"
     entity = component.get_entity(entity_id)
 
-    # Trigger line 114: self._state = None inside if data is None:
+    # Trigger structural guards in native_value (lines 118-121)
     original_data = coordinator.data[device_id]["data"]
+    original_val = original_data["presentVolts"]
     coordinator.data[device_id]["data"] = None
     assert entity.native_value is None
     coordinator.data[device_id]["data"] = original_data
+    coordinator.data[device_id]["data"]["presentVolts"] = None
+    assert entity.native_value is None
+    coordinator.data[device_id]["data"]["presentVolts"] = []
+    assert entity.native_value is None
+    coordinator.data[device_id]["data"]["presentVolts"] = original_val
 
+    # Trigger structural guard in native_unit_of_measurement (line 146-147)
+    # presentVolts in realtime_data.json is 13.0 (not a tuple)
     assert entity.native_unit_of_measurement == "V"
