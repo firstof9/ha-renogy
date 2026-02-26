@@ -1,6 +1,5 @@
 """Test BLE client implementation."""
 
-import asyncio
 import logging
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
@@ -13,7 +12,6 @@ from custom_components.renogy.ble_client import (
     BLEDeviceManager,
     DeviceConfig,
     DeviceData,
-    DeviceType,
     PersistentBLEConnection,
     scan_for_devices,
 )
@@ -51,16 +49,19 @@ def mock_bleak_client():
 
 async def test_persistent_connection_connect(mock_bleak_client):
     """Test connection establishment."""
-    with patch(
-        "custom_components.renogy.ble_client.BleakClient",
-        return_value=mock_bleak_client,
-    ), patch(
-        "custom_components.renogy.ble_client.BleakScanner.find_device_by_address",
-        return_value=MagicMock(),
+    with (
+        patch(
+            "custom_components.renogy.ble_client.BleakClient",
+            return_value=mock_bleak_client,
+        ),
+        patch(
+            "custom_components.renogy.ble_client.bluetooth.async_ble_device_from_address",
+            return_value=MagicMock(),
+        ),
     ):
-
+        mock_hass = MagicMock()
         config = DeviceConfig("dev1", "AA:BB:CC:DD:EE:FF", "controller")
-        connection = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [config])
+        connection = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [config])
 
         connected = await connection.connect()
         assert connected is True
@@ -72,16 +73,19 @@ async def test_persistent_connection_connect(mock_bleak_client):
 
 async def test_read_registers_success(mock_bleak_client):
     """Test reading registers successfully."""
-    with patch(
-        "custom_components.renogy.ble_client.BleakClient",
-        return_value=mock_bleak_client,
-    ), patch(
-        "custom_components.renogy.ble_client.BleakScanner.find_device_by_address",
-        return_value=MagicMock(),
+    with (
+        patch(
+            "custom_components.renogy.ble_client.BleakClient",
+            return_value=mock_bleak_client,
+        ),
+        patch(
+            "custom_components.renogy.ble_client.bluetooth.async_ble_device_from_address",
+            return_value=MagicMock(),
+        ),
     ):
-
+        mock_hass = MagicMock()
         config = DeviceConfig("dev1", "AA:BB:CC:DD:EE:FF", "controller")
-        connection = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [config])
+        connection = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [config])
         await connection.connect()
 
         # Setup notification triggering
@@ -116,57 +120,67 @@ async def test_read_registers_success(mock_bleak_client):
 
 async def test_read_registers_timeout(mock_bleak_client):
     """Test read timeout."""
-    with patch(
-        "custom_components.renogy.ble_client.BleakClient",
-        return_value=mock_bleak_client,
-    ), patch(
-        "custom_components.renogy.ble_client.BleakScanner.find_device_by_address",
-        return_value=MagicMock(),
+    with (
+        patch(
+            "custom_components.renogy.ble_client.BleakClient",
+            return_value=mock_bleak_client,
+        ),
+        patch(
+            "custom_components.renogy.ble_client.bluetooth.async_ble_device_from_address",
+            return_value=MagicMock(),
+        ),
     ):
-
+        mock_hass = MagicMock()
         config = DeviceConfig("dev1", "AA:BB:CC:DD:EE:FF", "controller")
-        connection = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [config])
+        connection = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [config])
         await connection.connect()
 
         # Adjust timeout to be fast for test
-        with patch("asyncio.wait_for", side_effect=asyncio.TimeoutError):
+        with patch("custom_components.renogy.ble_client.NOTIFICATION_TIMEOUT", 0.01):
             data = await connection.read_registers(1, 0, 1)
             assert data is None
 
 
 async def test_poll_device(mock_bleak_client):
     """Test full device polling."""
-    with patch(
-        "custom_components.renogy.ble_client.BleakClient",
-        return_value=mock_bleak_client,
-    ), patch(
-        "custom_components.renogy.ble_client.BleakScanner.find_device_by_address",
-        return_value=MagicMock(),
-    ), patch(
-        "custom_components.renogy.ble_client.validate_modbus_response",
-        return_value=True,
-    ), patch(
-        "custom_components.renogy.ble_client.PersistentBLEConnection.read_registers"
-    ) as mock_read:
-
+    with (
+        patch(
+            "custom_components.renogy.ble_client.BleakClient",
+            return_value=mock_bleak_client,
+        ),
+        patch(
+            "custom_components.renogy.ble_client.bluetooth.async_ble_device_from_address",
+            return_value=MagicMock(),
+        ),
+        patch(
+            "custom_components.renogy.ble_client.validate_modbus_response",
+            return_value=True,
+        ),
+        patch(
+            "custom_components.renogy.ble_client.PersistentBLEConnection.read_registers"
+        ) as mock_read,
+    ):
         # Setup mock read to return dummy data for each call
         mock_read.return_value = b"\x00" * 20  # Dummy data
 
+        mock_hass = MagicMock()
         config = DeviceConfig("dev1", "AA:BB:CC:DD:EE:FF", "controller")
-        connection = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [config])
+        connection = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [config])
         await connection.connect()
 
         # Mock get_registers_for_device and parse_response
         fake_registers = [{"name": "fake_reg", "register": 100, "words": 1}]
 
-        with patch(
-            "custom_components.renogy.ble_client.get_registers_for_device",
-            return_value=fake_registers,
-        ), patch(
-            "custom_components.renogy.ble_client.parse_response",
-            return_value={"fake_val": 123},
+        with (
+            patch(
+                "custom_components.renogy.ble_client.get_registers_for_device",
+                return_value=fake_registers,
+            ),
+            patch(
+                "custom_components.renogy.ble_client.parse_response",
+                return_value={"fake_val": 123},
+            ),
         ):
-
             data = await connection.poll_device(config)
             assert data["fake_val"] == 123
             assert data["__device"] == "dev1"
@@ -185,7 +199,8 @@ async def test_manager_poll_all(mock_bleak_client):
         instance.poll_device = AsyncMock(return_value={"data": 1})
         instance.device_configs = [config]
 
-        manager = BLEDeviceManager([config])
+        mock_hass = MagicMock()
+        manager = BLEDeviceManager(mock_hass, [config])
 
         await manager.connect_all()
         results = await manager.poll_all()
@@ -206,7 +221,8 @@ async def test_manager_get_data(mock_bleak_client):
         instance.poll_device = AsyncMock(return_value={"data": 1})
         instance.device_configs = [config]
 
-        manager = BLEDeviceManager([config])
+        mock_hass = MagicMock()
+        manager = BLEDeviceManager(mock_hass, [config])
         await manager.connect_all()
         await manager.poll_all()
 
@@ -228,7 +244,8 @@ async def test_manager_stop(mock_bleak_client):
         instance.disconnect = AsyncMock()
 
         config = DeviceConfig("dev1", "AA:BB:CC:DD:EE:FF", "controller")
-        manager = BLEDeviceManager([config])
+        mock_hass = MagicMock()
+        manager = BLEDeviceManager(mock_hass, [config])
 
         await manager.connect_all()
         await manager.stop()
@@ -277,29 +294,27 @@ async def test_device_data_logic():
 
 async def test_connection_retry_logic():
     """Test connection retry logic when device not found initially."""
-    conn = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [])
+    mock_hass = MagicMock()
+    conn = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [])
 
-    with patch(
-        "custom_components.renogy.ble_client.BleakScanner"
-    ) as mock_scanner, patch(
-        "custom_components.renogy.ble_client.BleakClient"
-    ) as mock_client_cls, patch(
-        "asyncio.sleep", new_callable=AsyncMock
-    ) as mock_sleep:
-
-        # 1. find_device_by_address returns None initially
-        # 2. discover returns empty list
-        # 3. Next attempt find_device returns a device
+    with (
+        patch("custom_components.renogy.ble_client.bluetooth") as mock_bt,
+        patch("custom_components.renogy.ble_client.BleakClient") as mock_client_cls,
+        patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep,
+    ):
+        # bluetooth.async_ble_device_from_address returns None initially
+        # then returns a device
 
         mock_device = MagicMock(spec=BLEDevice)
         mock_device.address = "AA:BB:CC:DD:EE:FF"
 
-        # Attempt 1: Not found by address, Not found by scan
-        # Attempt 2: Found by address
-        mock_scanner.find_device_by_address = AsyncMock(
-            side_effect=[None, mock_device, mock_device]
-        )
-        mock_scanner.discover = AsyncMock(return_value=[])
+        # Attempt 1: Not found
+        # Attempt 2: Found
+        mock_bt.async_ble_device_from_address.side_effect = [
+            None,
+            mock_device,
+            mock_device,
+        ]
 
         mock_client = mock_client_cls.return_value
         mock_client.connect = AsyncMock(return_value=True)
@@ -309,40 +324,38 @@ async def test_connection_retry_logic():
         result = await conn.connect()
 
         assert result is True
-        assert mock_scanner.find_device_by_address.call_count == 2
+        assert mock_bt.async_ble_device_from_address.call_count == 2
         mock_sleep.assert_awaited()
 
 
 async def test_connection_retry_fail_after_3():
     """Test connection failure after 3 attempts."""
-    conn = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [])
+    mock_hass = MagicMock()
+    conn = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [])
 
-    with patch(
-        "custom_components.renogy.ble_client.BleakScanner"
-    ) as mock_scanner, patch("asyncio.sleep", new_callable=AsyncMock):
-
-        mock_scanner.find_device_by_address = AsyncMock(return_value=None)
-        mock_scanner.discover = AsyncMock(return_value=[])
+    with (
+        patch("custom_components.renogy.ble_client.bluetooth") as mock_bt,
+        patch("asyncio.sleep", new_callable=AsyncMock),
+    ):
+        mock_bt.async_ble_device_from_address.return_value = None
 
         result = await conn.connect()
         assert result is False
-        assert mock_scanner.find_device_by_address.call_count == 3
+        assert mock_bt.async_ble_device_from_address.call_count == 3
 
 
 async def test_connection_bleak_error():
     """Test handling of BleakError during connect."""
-    conn = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [])
+    mock_hass = MagicMock()
+    conn = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [])
 
-    with patch(
-        "custom_components.renogy.ble_client.BleakScanner"
-    ) as mock_scanner, patch(
-        "custom_components.renogy.ble_client.BleakClient"
-    ) as mock_client_cls, patch(
-        "asyncio.sleep", new_callable=AsyncMock
+    with (
+        patch("custom_components.renogy.ble_client.bluetooth") as mock_bt,
+        patch("custom_components.renogy.ble_client.BleakClient") as mock_client_cls,
+        patch("asyncio.sleep", new_callable=AsyncMock),
     ):
-
         mock_device = MagicMock(spec=BLEDevice)
-        mock_scanner.find_device_by_address = AsyncMock(return_value=mock_device)
+        mock_bt.async_ble_device_from_address.return_value = mock_device
 
         mock_client = mock_client_cls.return_value
         mock_client.connect = AsyncMock(side_effect=BleakError("Connection failed"))
@@ -354,7 +367,8 @@ async def test_connection_bleak_error():
 
 async def test_setup_characteristics_discovery():
     """Test characteristic discovery."""
-    conn = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [])
+    mock_hass = MagicMock()
+    conn = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [])
     conn.client = MagicMock()
 
     # Case 1: Found correct UUIDs
@@ -381,7 +395,8 @@ async def test_setup_characteristics_discovery():
 
 async def test_read_registers_preconditions():
     """Test errors if async primitives not ready."""
-    conn = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [])
+    mock_hass = MagicMock()
+    conn = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [])
 
     # We mock _ensure_async_primitives to do nothing,
     # so we can trigger the RuntimeError checks
@@ -392,7 +407,8 @@ async def test_read_registers_preconditions():
 
 async def test_read_registers_write_fail():
     """Test write failure handling."""
-    conn = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [])
+    mock_hass = MagicMock()
+    conn = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [])
     # Initialize lock/event manually or via helper
     conn._ensure_async_primitives()
     conn.client = MagicMock()
@@ -411,7 +427,8 @@ async def test_poll_device_no_reg():
     """Test polling device with no registers defined."""
     # Assuming 'inverter' has registers, let's make up a type or mock get_registers
     conf = DeviceConfig("dev", "mac", "controller")
-    conn = PersistentBLEConnection("mac", [conf])
+    mock_hass = MagicMock()
+    conn = PersistentBLEConnection(mock_hass, "mac", [conf])
 
     with patch(
         "custom_components.renogy.ble_client.get_registers_for_device", return_value=[]
@@ -426,7 +443,8 @@ async def test_manager_hub_mode():
     c2 = DeviceConfig("c2", "MAC1", "battery", 2)  # Same MAC
     c3 = DeviceConfig("c3", "MAC2", "inverter", 1)
 
-    manager = BLEDeviceManager([c1, c2, c3])
+    mock_hass = MagicMock()
+    manager = BLEDeviceManager(mock_hass, [c1, c2, c3])
 
     # Should have 2 connections
     assert len(manager._connections) == 2
@@ -440,7 +458,8 @@ async def test_manager_hub_mode():
 async def test_manager_reconnect_failure_in_poll():
     """Test manager handles reconnection failure during poll."""
     c1 = DeviceConfig("c1", "MAC1", "controller")
-    manager = BLEDeviceManager([c1])
+    mock_hass = MagicMock()
+    manager = BLEDeviceManager(mock_hass, [c1])
     conn = manager._connections["MAC1"]
 
     # Mock connection state as disconnected
@@ -461,9 +480,11 @@ async def test_manager_reconnect_failure_in_poll():
 
 async def test_scan_for_devices():
     """Test scanning function."""
+    mock_hass = MagicMock()
     with patch(
-        "custom_components.renogy.ble_client.BleakScanner.discover"
-    ) as mock_discover:
+        "custom_components.renogy.ble_client.bluetooth.async_get_scanner"
+    ) as mock_get_scanner:
+        mock_scanner = mock_get_scanner.return_value
         d1 = MagicMock(spec=BLEDevice)
         d1.name = "BT-TH-123"
         d1.address = "A1"
@@ -477,10 +498,10 @@ async def test_scan_for_devices():
         d3.address = "A3"
         d3.rssi = -70
 
-        mock_discover.return_value = [d1, d2, d3]
+        mock_scanner.discover = AsyncMock(return_value=[d1, d2, d3])
 
         # Test Default (filter Renogy)
-        results = await scan_for_devices()
+        results = await scan_for_devices(mock_hass)
         assert len(results) == 2
         names = [r["name"] for r in results]
         assert "BT-TH-123" in names
@@ -488,17 +509,18 @@ async def test_scan_for_devices():
         assert "Other" not in names
 
         # Test Show All
-        results = await scan_for_devices(show_all=True)
+        results = await scan_for_devices(mock_hass, show_all=True)
         assert len(results) == 3
 
 
 async def test_scan_failure():
     """Test scan exception handling."""
+    mock_hass = MagicMock()
     with patch(
-        "custom_components.renogy.ble_client.BleakScanner.discover",
+        "custom_components.renogy.ble_client.bluetooth.async_get_scanner",
         side_effect=Exception("Scan fail"),
     ):
-        results = await scan_for_devices()
+        results = await scan_for_devices(mock_hass)
         assert results == []
 
 
@@ -507,7 +529,8 @@ async def test_scan_failure():
 
 async def test_connect_already_connected():
     """Test connect returns immediately if already connected."""
-    conn = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [])
+    mock_hass = MagicMock()
+    conn = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [])
     conn._connected = True
     conn.client = MagicMock()
     conn.client.is_connected = True
@@ -517,47 +540,38 @@ async def test_connect_already_connected():
 
 async def test_connect_full_scan_fallback():
     """Test falling back to full scan when find_device_by_address fails."""
-    conn = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [])
+    mock_hass = MagicMock()
+    conn = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [])
 
-    with patch(
-        "custom_components.renogy.ble_client.BleakScanner"
-    ) as mock_scanner, patch(
-        "custom_components.renogy.ble_client.BleakClient"
-    ) as mock_client_cls:
-
-        # find_device_by_address returns None
-        mock_scanner.find_device_by_address = AsyncMock(return_value=None)
-
-        # discover returns list with our device
-        mock_device = MagicMock(spec=BLEDevice)
-        mock_device.address = "AA:BB:CC:DD:EE:FF"
-        mock_scanner.discover = AsyncMock(return_value=[mock_device])
+    with (
+        patch("custom_components.renogy.ble_client.bluetooth") as mock_bt,
+        patch("custom_components.renogy.ble_client.BleakClient") as mock_client_cls,
+    ):
+        # async_ble_device_from_address returns None
+        mock_bt.async_ble_device_from_address.return_value = None
 
         mock_client = mock_client_cls.return_value
         mock_client.connect = AsyncMock(return_value=True)
         mock_client.is_connected = True
         mock_client.start_notify = AsyncMock()
 
-        assert await conn.connect() is True
+        assert await conn.connect() is False
 
-        mock_scanner.find_device_by_address.assert_awaited()
-        mock_scanner.discover.assert_awaited()
+        mock_bt.async_ble_device_from_address.assert_called()
 
 
 async def test_connect_post_connect_check_fails():
     """Test connection considered failed if is_connected is False after connect()."""
-    conn = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [])
+    mock_hass = MagicMock()
+    conn = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [])
 
-    with patch(
-        "custom_components.renogy.ble_client.BleakScanner"
-    ) as mock_scanner, patch(
-        "custom_components.renogy.ble_client.BleakClient"
-    ) as mock_client_cls, patch(
-        "asyncio.sleep", new_callable=AsyncMock
+    with (
+        patch("custom_components.renogy.ble_client.bluetooth") as mock_bt,
+        patch("custom_components.renogy.ble_client.BleakClient") as mock_client_cls,
+        patch("asyncio.sleep", new_callable=AsyncMock),
     ):
-
         mock_device = MagicMock(spec=BLEDevice)
-        mock_scanner.find_device_by_address = AsyncMock(return_value=mock_device)
+        mock_bt.async_ble_device_from_address.return_value = mock_device
 
         mock_client = mock_client_cls.return_value
         mock_client.connect = AsyncMock(return_value=True)
@@ -571,7 +585,8 @@ async def test_connect_post_connect_check_fails():
 
 async def test_disconnect_handling():
     """Test disconnect and _on_disconnect."""
-    conn = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [])
+    mock_hass = MagicMock()
+    conn = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [])
     conn._connected = True
     conn.client = MagicMock()
 
@@ -590,7 +605,8 @@ async def test_disconnect_handling():
 
 async def test_setup_characteristics_no_client():
     """Test _setup_characteristics returns early if client is None."""
-    conn = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [])
+    mock_hass = MagicMock()
+    conn = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [])
     conn.client = None
     await conn._setup_characteristics()
     assert conn._notify_char is None
@@ -598,7 +614,8 @@ async def test_setup_characteristics_no_client():
 
 async def test_read_registers_client_none_before_write():
     """Test RuntimeError if client became None before write."""
-    conn = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [])
+    mock_hass = MagicMock()
+    conn = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [])
     conn._ensure_async_primitives()
     conn._connected = True
 
@@ -624,23 +641,26 @@ async def test_read_registers_client_none_before_write():
 
 async def test_poll_device_no_data_warning(caplog):
     """Test poll_device logging warning when no data is parsed."""
+    mock_hass = MagicMock()
     config = DeviceConfig("dev1", "AA:BB:CC:DD:EE:FF", "controller")
-    conn = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [config])
+    conn = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [config])
 
     fake_regs = [{"name": "fake", "register": 1, "words": 1}]
 
-    with patch(
-        "custom_components.renogy.ble_client.get_registers_for_device",
-        return_value=fake_regs,
-    ), patch.object(
-        conn, "read_registers", return_value=b"\x01\x03\x02\x00\x00\x00\x00"
-    ), patch(
-        "custom_components.renogy.ble_client.validate_modbus_response",
-        return_value=True,
-    ), patch(
-        "custom_components.renogy.ble_client.parse_response", return_value={}
+    with (
+        patch(
+            "custom_components.renogy.ble_client.get_registers_for_device",
+            return_value=fake_regs,
+        ),
+        patch.object(
+            conn, "read_registers", return_value=b"\x01\x03\x02\x00\x00\x00\x00"
+        ),
+        patch(
+            "custom_components.renogy.ble_client.validate_modbus_response",
+            return_value=True,
+        ),
+        patch("custom_components.renogy.ble_client.parse_response", return_value={}),
     ):
-
         with caplog.at_level(logging.WARNING):
             data = await conn.poll_device(config)
             assert data == {}
@@ -652,7 +672,8 @@ async def test_connect_all_failures():
     c1 = DeviceConfig("c1", "MAC1", "controller")
     c2 = DeviceConfig("c2", "MAC2", "controller")  # Fails
 
-    manager = BLEDeviceManager([c1, c2])
+    mock_hass = MagicMock()
+    manager = BLEDeviceManager(mock_hass, [c1, c2])
 
     p1 = manager._connections["MAC1"]
     p1.connect = AsyncMock(return_value=True)
@@ -672,8 +693,9 @@ async def test_poll_all_callbacks():
     cb = MagicMock()
     async_cb = AsyncMock()
 
+    mock_hass = MagicMock()
     # Manager with sync callback
-    manager = BLEDeviceManager([c1], on_data_callback=cb)
+    manager = BLEDeviceManager(mock_hass, [c1], on_data_callback=cb)
     manager._connections["MAC1"].connect = AsyncMock(return_value=True)
     manager._connections["MAC1"].poll_device = AsyncMock(return_value={"volts": 12})
 
@@ -681,7 +703,7 @@ async def test_poll_all_callbacks():
     cb.assert_called()
 
     # Manager with async callback
-    manager2 = BLEDeviceManager([c1], on_data_callback=async_cb)
+    manager2 = BLEDeviceManager(mock_hass, [c1], on_data_callback=async_cb)
     manager2._connections["MAC1"].connect = AsyncMock(return_value=True)
     manager2._connections["MAC1"].poll_device = AsyncMock(return_value={"volts": 12})
 
@@ -695,7 +717,8 @@ async def test_poll_all_callback_exception():
 
     cb = MagicMock(side_effect=Exception("Callback Boom"))
 
-    manager = BLEDeviceManager([c1], on_data_callback=cb)
+    mock_hass = MagicMock()
+    manager = BLEDeviceManager(mock_hass, [c1], on_data_callback=cb)
     manager._connections["MAC1"].connect = AsyncMock(return_value=True)
     manager._connections["MAC1"].poll_device = AsyncMock(return_value={"volts": 12})
 
@@ -714,7 +737,8 @@ async def test_poll_all_callback_exception():
 
 async def test_read_registers_no_notification_event():
     """Test RuntimeError when notification event is missing."""
-    conn = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [])
+    mock_hass = MagicMock()
+    conn = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [])
     conn._ensure_async_primitives()
 
     # Manually unset event but keep lock to get past first check
@@ -726,7 +750,8 @@ async def test_read_registers_no_notification_event():
 
 async def test_read_registers_reconnect_fail():
     """Test reconnection failure inside read_registers."""
-    conn = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [])
+    mock_hass = MagicMock()
+    conn = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [])
     conn._ensure_async_primitives()
 
     # We need to enter the lock
@@ -748,43 +773,51 @@ async def test_read_registers_reconnect_fail():
 
 async def test_poll_device_invalid_response():
     """Test poll_device logging warning on invalid response."""
+    mock_hass = MagicMock()
     config = DeviceConfig("dev1", "AA:BB:CC:DD:EE:FF", "controller")
-    conn = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [config])
+    conn = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [config])
 
     fake_regs = [{"name": "fake", "register": 1, "words": 1}]
 
-    with patch(
-        "custom_components.renogy.ble_client.get_registers_for_device",
-        return_value=fake_regs,
-    ), patch.object(conn, "read_registers", return_value=b"\x00" * 5), patch(
-        "custom_components.renogy.ble_client.validate_modbus_response",
-        return_value=False,
+    with (
+        patch(
+            "custom_components.renogy.ble_client.get_registers_for_device",
+            return_value=fake_regs,
+        ),
+        patch.object(conn, "read_registers", return_value=b"\x00" * 5),
+        patch(
+            "custom_components.renogy.ble_client.validate_modbus_response",
+            return_value=False,
+        ),
     ):
-
         data = await conn.poll_device(config)
         assert data == {}
 
 
 async def test_poll_device_no_data_received():
     """Test poll_device when read_registers returns None."""
+    mock_hass = MagicMock()
     config = DeviceConfig("dev1", "AA:BB:CC:DD:EE:FF", "controller")
-    conn = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [config])
+    conn = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [config])
 
     fake_regs = [{"name": "fake", "register": 1, "words": 1}]
 
-    with patch(
-        "custom_components.renogy.ble_client.get_registers_for_device",
-        return_value=fake_regs,
-    ), patch.object(conn, "read_registers", return_value=None):
-
+    with (
+        patch(
+            "custom_components.renogy.ble_client.get_registers_for_device",
+            return_value=fake_regs,
+        ),
+        patch.object(conn, "read_registers", return_value=None),
+    ):
         data = await conn.poll_device(config)
         assert data == {}
 
 
 async def test_poll_all_no_data_warning():
     """Test poll_all logging warning when poll_device returns empty."""
+    mock_hass = MagicMock()
     config = DeviceConfig("dev1", "AA:BB:CC:DD:EE:FF", "controller")
-    manager = BLEDeviceManager([config])
+    manager = BLEDeviceManager(mock_hass, [config])
 
     conn = manager._connections["AA:BB:CC:DD:EE:FF"]
     conn._connected = True

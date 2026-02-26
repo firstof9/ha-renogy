@@ -153,7 +153,7 @@ async def _async_setup_ble_entry(
         device_id=device_id,
     )
 
-    ble_manager = BLEDeviceManager([device_config])
+    ble_manager = BLEDeviceManager(hass, [device_config])
 
     interval = 30
     coordinator = BLEUpdateCoordinator(hass, interval, config_entry, ble_manager)
@@ -370,9 +370,7 @@ class BLEUpdateCoordinator(DataUpdateCoordinator):
 class RenogyManager:
     """Renogy connection manager."""
 
-    def __init__(
-        self, hass: HomeAssistant, config_entry: ConfigEntry
-    ) -> None:
+    def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
         """Initialize."""
         self._secret_key = config_entry.data.get(CONF_SECRET_KEY)
         self._access_key = config_entry.data.get(CONF_ACCESS_KEY)

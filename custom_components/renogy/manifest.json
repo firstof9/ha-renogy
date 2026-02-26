@@ -2,7 +2,8 @@
     "domain": "renogy",
     "name": "Renogy",
     "after_dependencies": [
-        "bluetooth"
+        "bluetooth",
+        "bluetooth_adapters"
     ],
     "bluetooth": [
         {
@@ -21,8 +22,7 @@
         "renogyapi"
     ],
     "requirements": [
-        "py_renogy==1.2.3",
-        "bleak>=0.21.1,<1.0.0"
+        "py_renogy==1.2.3"
     ],
     "version": "0.0.0-dev"
 }
