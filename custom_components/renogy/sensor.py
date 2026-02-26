@@ -126,7 +126,7 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
         elif self._type == "batteryType" and isinstance(raw, int):
             value = BATTERY_TYPE.get(raw)
         else:
-            value = val[0]
+            value = raw
         self._state = value
         _LOGGER.debug("Sensor [%s] updated value: %s", self._type, self._state)
         return self._state
