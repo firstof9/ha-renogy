@@ -1,7 +1,7 @@
 """Test the DataValidator class."""
 
 import pytest
-from datetime import datetime
+
 from custom_components.renogy.ble_validator import (
     DataValidator,
     DataValidatorManager,
@@ -160,7 +160,7 @@ async def test_log_truncation():
     # Max log is 100
 
     # Generate 105 rejections
-    for i in range(105):
+    for _i in range(105):
         validator.validate_data({"battery_voltage": 100.0})  # Max is 20
 
     stats = validator.get_rejection_stats()

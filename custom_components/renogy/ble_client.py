@@ -10,14 +10,14 @@ from __future__ import annotations
 import asyncio
 import inspect
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.exc import BleakError
-
 from homeassistant.components import bluetooth
 
 if TYPE_CHECKING:
@@ -78,12 +78,12 @@ class DeviceData:
     """Stores data collected from a device."""
 
     config: DeviceConfig
-    data: Dict[str, Any] = field(default_factory=dict)
-    last_update: Optional[datetime] = None
+    data: dict[str, Any] = field(default_factory=dict)
+    last_update: datetime | None = None
     is_available: bool = False
     consecutive_failures: int = 0
 
-    def update(self, new_data: Dict[str, Any]) -> None:
+    def update(self, new_data: dict[str, Any]) -> None:
         """Update device data with new readings."""
         self.data.update(new_data)
         self.last_update = datetime.now()
@@ -105,20 +105,20 @@ class PersistentBLEConnection:
     """
 
     def __init__(
-        self, hass: HomeAssistant, mac_address: str, device_configs: List[DeviceConfig]
+        self, hass: HomeAssistant, mac_address: str, device_configs: list[DeviceConfig]
     ) -> None:
         """Initialize the connection."""
         self.hass = hass
         self.mac_address = mac_address
         self.device_configs = device_configs
-        self.client: Optional[BleakClient] = None
+        self.client: BleakClient | None = None
         self._connected = False
-        self._notify_char: Optional[str] = None
-        self._write_char: Optional[str] = None
+        self._notify_char: str | None = None
+        self._write_char: str | None = None
         self._notification_data = bytearray()
-        self._notification_event: Optional[asyncio.Event] = None
-        self._lock: Optional[asyncio.Lock] = None
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._notification_event: asyncio.Event | None = None
+        self._lock: asyncio.Lock | None = None
+        self._loop: asyncio.AbstractEventLoop | None = None
 
     @property
     def is_connected(self) -> bool:
@@ -292,7 +292,7 @@ class PersistentBLEConnection:
 
     async def read_registers(
         self, device_id: int, register: int, word_count: int
-    ) -> Optional[bytes]:
+    ) -> bytes | None:
         """Read registers from a device on this BT module.
 
         Args:
@@ -355,7 +355,7 @@ class PersistentBLEConnection:
                 await asyncio.wait_for(
                     self._notification_event.wait(), timeout=NOTIFICATION_TIMEOUT
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 _LOGGER.warning(
                     "[%s] Timeout waiting for response (reg=%s, dev_id=%s)",
                     _obfuscate_mac(self.mac_address),
@@ -378,7 +378,7 @@ class PersistentBLEConnection:
 
             return response if len(response) >= 5 else None
 
-    async def poll_device(self, config: DeviceConfig) -> Dict[str, Any]:
+    async def poll_device(self, config: DeviceConfig) -> dict[str, Any]:
         """Poll a specific device on this BT module.
 
         Args:
@@ -404,7 +404,7 @@ class PersistentBLEConnection:
             )
             return {}
 
-        all_data: Dict[str, Any] = {}
+        all_data: dict[str, Any] = {}
 
         for reg_info in registers:
             _LOGGER.debug(
@@ -462,15 +462,15 @@ class BLEDeviceManager:
     def __init__(
         self,
         hass: HomeAssistant,
-        device_configs: List[DeviceConfig],
-        on_data_callback: Optional[Callable] = None,
+        device_configs: list[DeviceConfig],
+        on_data_callback: Callable | None = None,
     ) -> None:
         """Initialize the device manager."""
         self.hass = hass
-        self._connections: Dict[str, PersistentBLEConnection] = {}
-        self._device_data: Dict[str, DeviceData] = {}
+        self._connections: dict[str, PersistentBLEConnection] = {}
+        self._device_data: dict[str, DeviceData] = {}
 
-        devices_by_mac: Dict[str, List[DeviceConfig]] = {}
+        devices_by_mac: dict[str, list[DeviceConfig]] = {}
         for config in device_configs:
             mac = config.mac_address.upper()
             if mac not in devices_by_mac:
@@ -518,13 +518,13 @@ class BLEDeviceManager:
         for connection in self._connections.values():
             await connection.disconnect()
 
-    async def poll_all(self) -> Dict[str, Dict[str, Any]]:
+    async def poll_all(self) -> dict[str, dict[str, Any]]:
         """Poll all devices.
 
         Returns:
             Dictionary mapping device keys to data.
         """
-        results: Dict[str, Dict[str, Any]] = {}
+        results: dict[str, dict[str, Any]] = {}
 
         for mac, connection in self._connections.items():
             if not connection.is_connected:
@@ -572,11 +572,11 @@ class BLEDeviceManager:
 
         return results
 
-    def get_device_data(self, device_key: str) -> Optional[DeviceData]:
+    def get_device_data(self, device_key: str) -> DeviceData | None:
         """Get data for a specific device."""
         return self._device_data.get(device_key)
 
-    def get_all_device_data(self) -> Dict[str, DeviceData]:
+    def get_all_device_data(self) -> dict[str, DeviceData]:
         """Get data for all devices."""
         return self._device_data
 
@@ -589,7 +589,7 @@ class BLEDeviceManager:
 
 async def scan_for_devices(
     hass: HomeAssistant, timeout: float = 15.0, show_all: bool = False
-) -> List[Dict]:
+) -> list[dict]:
     """Scan for nearby Renogy BLE devices.
 
     Args:

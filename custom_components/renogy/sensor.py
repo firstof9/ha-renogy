@@ -91,7 +91,8 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
         self._state = None
 
         self._attr_icon = sensor_description.icon
-        self._attr_name = f"{coordinator.data[device_id]["name"]} {self._name}"
+        device_name = coordinator.data[device_id].get("name", device_id)
+        self._attr_name = f"{device_name} {self._name}"
         self._attr_unique_id = f"{self._name}_{device_id}"
 
     @property
@@ -109,45 +110,47 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
             self.update_icon()
             return self.coordinator.data[self._device_id][self._type]
 
-        data = self.coordinator.data[self._device_id]["data"]
-        if data is None:
+        data = self.coordinator.data[self._device_id].get("data")
+        if data is None or self._type not in data:
             self._state = None
-        if self._type in data.keys():
-            if self._type == "output":
-                try:
-                    value = OUTPUT_MODES[data[self._type][0]]
-                except KeyError:
-                    value = None
-            elif self._type == "batteryType" and isinstance(data[self._type][0], int):
-                try:
-                    value = BATTERY_TYPE[data[self._type][0]]
-                except KeyError:
-                    value = None
-            else:
-                value = data[self._type][0]
-            self._state = value
+            return self._state
+
+        val = data[self._type]
+        if val is None or not isinstance(val, list | tuple) or len(val) == 0:
+            self._state = None
+            return self._state
+
+        raw = val[0]
+        if self._type == "output":
+            value = OUTPUT_MODES.get(raw)
+        elif self._type == "batteryType" and isinstance(raw, int):
+            value = BATTERY_TYPE.get(raw)
+        else:
+            value = raw
+        self._state = value
         _LOGGER.debug("Sensor [%s] updated value: %s", self._type, self._state)
         return self._state
 
     @property
     def native_unit_of_measurement(self) -> Any:
         """Return the unit of measurement."""
-        data = self.coordinator.data[self._device_id]["data"]
+        data = self.coordinator.data[self._device_id].get("data")
         if not data or self._type not in data:
             return self.unit
 
-        if not isinstance(data[self._type], tuple):
+        val = data[self._type]
+        if not isinstance(val, list | tuple) or len(val) < 2:
             return self.unit
 
-        if data[self._type][1] in FILTER_UNITS:
+        if val[1] in FILTER_UNITS:
             return self.unit
 
-        if data[self._type][1] == "":
+        if val[1] == "":
             if self.unit is None:
                 return None
             return self.unit
 
-        return data[self._type][1]
+        return val[1]
 
     @property
     def available(self) -> bool:

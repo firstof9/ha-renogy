@@ -24,23 +24,16 @@ async def async_setup_entry(hass, entry, async_add_devices):
 
     binary_sensors = []
     for device_id, device in coordinator.data.items():
-        for (
-            binary_sensor
-        ) in BINARY_SENSORS:  # pylint: disable=consider-using-dict-items
-            temp_obj = RenogyBinarySensor(
-                BINARY_SENSORS[binary_sensor],
-                device_id,
-                coordinator,
-                entry,
-            )
-            if (
-                binary_sensor in device.keys()
-            ):  # pylint: disable=consider-using-dict-items
-                if temp_obj not in binary_sensors:
-                    binary_sensors.append(temp_obj)
-            if binary_sensor in device["data"].keys():
-                if temp_obj not in binary_sensors:
-                    binary_sensors.append(temp_obj)
+        for key, spec in BINARY_SENSORS.items():
+            if key in device or key in device["data"]:
+                binary_sensors.append(
+                    RenogyBinarySensor(
+                        spec,
+                        device_id,
+                        coordinator,
+                        entry,
+                    )
+                )
 
     async_add_devices(binary_sensors, False)
 
@@ -64,7 +57,7 @@ class RenogyBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._type = sensor_description.key
         self._device_id = device_id
 
-        self._attr_name = f"{coordinator.data[device_id]["name"]} {self._name}"
+        self._attr_name = f"{coordinator.data[device_id]['name']} {self._name}"
         self._attr_unique_id = f"{self._name}_{device_id}"
 
     @property
@@ -80,15 +73,13 @@ class RenogyBinarySensor(CoordinatorEntity, BinarySensorEntity):
     def is_on(self) -> bool:
         """Return True if the service is on."""
         data = self.coordinator.data[self._device_id]
-        if self._type in data.keys():
+        if self._type in data:
             if self._type == "status":
-                if data[self._type] == "online":
-                    return True
-                return False
+                return data[self._type] == "online"
 
-        data = self.coordinator.data[self._device_id]["data"]
-        if self._type not in data.keys():
+        data = self.coordinator.data[self._device_id].get("data")
+        if data is None or self._type not in data:
             _LOGGER.info("binary_sensor [%s] not supported.", self._type)
-            return None
+            return False
         _LOGGER.debug("binary_sensor [%s]: %s", self._name, data[self._type][0])
         return cast(bool, data[self._type][0] == 1)

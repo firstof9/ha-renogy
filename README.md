@@ -48,11 +48,11 @@ Currently (Jan 2025), the API does not support control of devices and can only r
 ## Manual (non-HACS)
 <details>
 <summary>Instructions</summary>
-  
+
 <br>
 You probably do not want to do this! Use the HACS method above unless you know what you are doing and have a good reason as to why you are installing manually
 <br>
-  
+
 1. Using the tool of choice open the directory (folder) for your HA configuration (where you find `configuration.yaml`).
 2. If you do not have a `custom_components` directory (folder) there, you need to create it.
 3. In the `custom_components` directory (folder) create a new folder called `renogy`.
@@ -80,7 +80,7 @@ For **separate BT modules** (one per device), use `device_id: 255`.
 
 ## Exposed Entities
 
-This is depedent on type of device. Here are some examples of the entities that are exposed for the ONE Core and its connected devices.
+This is dependent on the type of device. Here are some examples of the entities that are exposed for the ONE Core and its connected devices.
 
 Renogy ONE Core and connected devices:
 

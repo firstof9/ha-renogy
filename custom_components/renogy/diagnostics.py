@@ -9,7 +9,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceEntry
 
-from .const import COORDINATOR, DOMAIN, CONF_ACCESS_KEY, CONF_SECRET_KEY
+from .const import CONF_ACCESS_KEY, CONF_SECRET_KEY, COORDINATOR, DOMAIN
 
 REDACT_KEYS = {CONF_ACCESS_KEY, CONF_SECRET_KEY}
 

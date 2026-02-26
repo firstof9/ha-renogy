@@ -8,7 +8,6 @@ Adapted from https://github.com/Anto79-ops/renogy-ble
 from __future__ import annotations
 
 import logging
-from typing import Union
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -75,7 +74,7 @@ def bytes_to_int(
     length: int,
     scale: float = 1.0,
     signed: bool = False,
-) -> Union[int, float]:
+) -> int | float:
     """Convert bytes to integer or float value.
 
     Args:

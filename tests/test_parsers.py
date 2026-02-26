@@ -1,7 +1,4 @@
-import logging
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import patch
 
 from custom_components.renogy.ble_parsers import (
     DeviceType,

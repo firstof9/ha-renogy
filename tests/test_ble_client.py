@@ -2,8 +2,8 @@
 
 import logging
 from unittest.mock import AsyncMock, MagicMock, patch
-import pytest
 
+import pytest
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
@@ -191,10 +191,10 @@ async def test_manager_poll_all(mock_bleak_client):
     # Mock connection class
     with patch(
         "custom_components.renogy.ble_client.PersistentBLEConnection"
-    ) as MockConn:
+    ) as mock_conn:
         config = DeviceConfig("dev1", "AA:BB:CC:DD:EE:FF", "controller")
 
-        instance = MockConn.return_value
+        instance = mock_conn.return_value
         instance.connect = AsyncMock(return_value=True)
         instance.poll_device = AsyncMock(return_value={"data": 1})
         instance.device_configs = [config]
@@ -214,9 +214,9 @@ async def test_manager_get_data(mock_bleak_client):
     """Test manager get data methods."""
     with patch(
         "custom_components.renogy.ble_client.PersistentBLEConnection"
-    ) as MockConn:
+    ) as mock_conn:
         config = DeviceConfig("dev1", "AA:BB:CC:DD:EE:FF", "controller")
-        instance = MockConn.return_value
+        instance = mock_conn.return_value
         instance.connect = AsyncMock(return_value=True)  # Needs to be AsyncMock
         instance.poll_device = AsyncMock(return_value={"data": 1})
         instance.device_configs = [config]
@@ -238,8 +238,8 @@ async def test_manager_stop(mock_bleak_client):
     """Test manager stop."""
     with patch(
         "custom_components.renogy.ble_client.PersistentBLEConnection"
-    ) as MockConn:
-        instance = MockConn.return_value
+    ) as mock_conn:
+        instance = mock_conn.return_value
         instance.connect = AsyncMock(return_value=True)  # Needs to be AsyncMock
         instance.disconnect = AsyncMock()
 

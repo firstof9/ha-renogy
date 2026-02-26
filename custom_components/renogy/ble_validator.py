@@ -12,12 +12,12 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 _LOGGER = logging.getLogger(__name__)
 
 # Base validation limits for a 12V system: (min, max, max_change_per_update)
-_CONTROLLER_BASE_LIMITS: Dict[str, Tuple[float, float, float]] = {
+_CONTROLLER_BASE_LIMITS: dict[str, tuple[float, float, float]] = {
     # Battery sensors
     "battery_voltage": (0, 20, 5),
     "battery_current": (-100, 100, 50),
@@ -48,7 +48,7 @@ _VOLTAGE_SCALED_KEYS = {"battery_voltage", "pv_voltage", "load_voltage"}
 
 def get_controller_validation_limits(
     system_voltage: int = 12,
-) -> Dict[str, Tuple[float, float, float]]:
+) -> dict[str, tuple[float, float, float]]:
     """Return controller validation limits scaled for the given system voltage.
 
     Voltage-dependent keys (battery_voltage, pv_voltage, load_voltage) have
@@ -62,7 +62,7 @@ def get_controller_validation_limits(
         Dictionary of (min, max, max_change_per_update) tuples.
     """
     multiplier = max(system_voltage / 12, 1.0)
-    limits: Dict[str, Tuple[float, float, float]] = {}
+    limits: dict[str, tuple[float, float, float]] = {}
     for key, (min_val, max_val, max_change) in _CONTROLLER_BASE_LIMITS.items():
         if key in _VOLTAGE_SCALED_KEYS:
             limits[key] = (min_val, max_val * multiplier, max_change * multiplier)
@@ -92,18 +92,18 @@ class DataValidator:
         """
         self.device_name = device_name
         self.device_type = device_type
-        self._last_good_values: Dict[str, float] = {}
-        self._rejection_log: List[Dict[str, Any]] = []
+        self._last_good_values: dict[str, float] = {}
+        self._rejection_log: list[dict[str, Any]] = []
         self._max_rejection_log = 100
 
         if device_type == "controller":
             self._limits = get_controller_validation_limits(system_voltage)
         else:
-            self._limits: Dict[str, tuple] = {}
+            self._limits: dict[str, tuple] = {}
 
     def validate_data(
-        self, data: Dict[str, Any]
-    ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+        self, data: dict[str, Any]
+    ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         """Validate sensor data and replace invalid values with last known good values.
 
         Args:
@@ -116,13 +116,13 @@ class DataValidator:
             return data, []
 
         validated = data.copy()
-        rejections: List[Dict[str, Any]] = []
+        rejections: list[dict[str, Any]] = []
 
         for key, value in data.items():
             if key not in self._limits:
                 continue
 
-            if not isinstance(value, (int, float)):
+            if not isinstance(value, int | float):
                 continue
 
             min_val, max_val, max_change = self._limits[key]
@@ -168,13 +168,13 @@ class DataValidator:
 
         return validated, rejections
 
-    def _add_to_rejection_log(self, rejection: Dict[str, Any]) -> None:
+    def _add_to_rejection_log(self, rejection: dict[str, Any]) -> None:
         """Add a rejection to the log, maintaining max size."""
         self._rejection_log.append(rejection)
         if len(self._rejection_log) > self._max_rejection_log:
             self._rejection_log = self._rejection_log[-self._max_rejection_log :]
 
-    def get_rejection_stats(self) -> Dict[str, Any]:
+    def get_rejection_stats(self) -> dict[str, Any]:
         """Get statistics about recent rejections."""
         if not self._rejection_log:
             return {
@@ -183,7 +183,7 @@ class DataValidator:
                 "rejection_counts_by_sensor": {},
             }
 
-        counts: Dict[str, int] = {}
+        counts: dict[str, int] = {}
         for rejection in self._rejection_log:
             sensor = rejection["sensor"]
             counts[sensor] = counts.get(sensor, 0) + 1
@@ -199,7 +199,7 @@ class DataValidator:
             ),
         }
 
-    def get_last_rejection(self) -> Optional[Dict[str, Any]]:
+    def get_last_rejection(self) -> dict[str, Any] | None:
         """Get the most recent rejection, if any."""
         return self._rejection_log[-1] if self._rejection_log else None
 
@@ -213,7 +213,7 @@ class DataValidatorManager:
 
     def __init__(self) -> None:
         """Initialize the manager."""
-        self._validators: Dict[str, DataValidator] = {}
+        self._validators: dict[str, DataValidator] = {}
 
     def get_validator(
         self, device_name: str, device_type: str, system_voltage: int = 12
@@ -230,14 +230,14 @@ class DataValidatorManager:
         self,
         device_name: str,
         device_type: str,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         system_voltage: int = 12,
-    ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+    ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         """Validate data for a device."""
         validator = self.get_validator(device_name, device_type, system_voltage)
         return validator.validate_data(data)
 
-    def get_all_rejection_stats(self) -> Dict[str, Dict[str, Any]]:
+    def get_all_rejection_stats(self) -> dict[str, dict[str, Any]]:
         """Get rejection stats for all devices."""
         return {
             name: validator.get_rejection_stats()

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any
 
 from .ble_utils import bytes_to_ascii, bytes_to_int, parse_temperature
 
@@ -65,30 +65,30 @@ CONTROLLER_REGISTERS = [
 ]
 
 
-def parse_controller_device_info(data: bytes, offset: int = 3) -> Dict[str, Any]:
+def parse_controller_device_info(data: bytes, offset: int = 3) -> dict[str, Any]:
     """Parse controller device info (registers 12-19)."""
-    result: Dict[str, Any] = {}
+    result: dict[str, Any] = {}
     if len(data) < offset + 16:
         return result
     result["model"] = bytes_to_ascii(data, offset, 16).strip("\x00")
     return result
 
 
-def parse_controller_device_id(data: bytes, offset: int = 3) -> Dict[str, Any]:
+def parse_controller_device_id(data: bytes, offset: int = 3) -> dict[str, Any]:
     """Parse controller device ID (register 26)."""
-    result: Dict[str, Any] = {}
+    result: dict[str, Any] = {}
     if len(data) < offset + 2:
         return result
     result["device_id"] = bytes_to_int(data, offset, 1)
     return result
 
 
-def parse_controller_charging_info(data: bytes, offset: int = 3) -> Dict[str, Any]:
+def parse_controller_charging_info(data: bytes, offset: int = 3) -> dict[str, Any]:
     """Parse controller charging info (registers 256-289).
 
     This is the main data section with battery, PV, load, and controller info.
     """
-    result: Dict[str, Any] = {}
+    result: dict[str, Any] = {}
     if len(data) < offset + 68:
         _LOGGER.warning("Charging info data too short: %s bytes", len(data))
         return result
@@ -163,9 +163,9 @@ def parse_controller_charging_info(data: bytes, offset: int = 3) -> Dict[str, An
     return result
 
 
-def parse_controller_battery_type(data: bytes, offset: int = 3) -> Dict[str, Any]:
+def parse_controller_battery_type(data: bytes, offset: int = 3) -> dict[str, Any]:
     """Parse controller battery type (register 57348 / 0xE004)."""
-    result: Dict[str, Any] = {}
+    result: dict[str, Any] = {}
     if len(data) < offset + 2:
         return result
     battery_type_val = bytes_to_int(data, offset, 2)
@@ -173,12 +173,12 @@ def parse_controller_battery_type(data: bytes, offset: int = 3) -> Dict[str, Any
     return result
 
 
-def parse_controller_faults(data: bytes, offset: int = 3) -> Dict[str, Any]:
+def parse_controller_faults(data: bytes, offset: int = 3) -> dict[str, Any]:
     """Parse controller fault and warning information (registers 0x0121-0x0122).
 
     This is a 32-bit value where each bit represents a specific fault/warning.
     """
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "faults": [],
         "warnings": [],
         "fault_count": 0,
@@ -232,9 +232,9 @@ def parse_controller_faults(data: bytes, offset: int = 3) -> Dict[str, Any]:
     return result
 
 
-def parse_controller_historical(data: bytes, offset: int = 3) -> Dict[str, Any]:
+def parse_controller_historical(data: bytes, offset: int = 3) -> dict[str, Any]:
     """Parse controller historical data (7 days)."""
-    result: Dict[str, Any] = {}
+    result: dict[str, Any] = {}
     if len(data) < offset + 42:
         return result
 
@@ -272,9 +272,9 @@ BATTERY_REGISTERS = [
 ]
 
 
-def parse_battery_cell_info(data: bytes, offset: int = 3) -> Dict[str, Any]:
+def parse_battery_cell_info(data: bytes, offset: int = 3) -> dict[str, Any]:
     """Parse battery cell information (registers 5000-5016)."""
-    result: Dict[str, Any] = {}
+    result: dict[str, Any] = {}
     if len(data) < offset + 4:
         return result
 
@@ -291,9 +291,9 @@ def parse_battery_cell_info(data: bytes, offset: int = 3) -> Dict[str, Any]:
     return result
 
 
-def parse_battery_temp_info(data: bytes, offset: int = 3) -> Dict[str, Any]:
+def parse_battery_temp_info(data: bytes, offset: int = 3) -> dict[str, Any]:
     """Parse battery temperature information (registers 5017-5033)."""
-    result: Dict[str, Any] = {}
+    result: dict[str, Any] = {}
     if len(data) < offset + 4:
         return result
 
@@ -313,9 +313,9 @@ def parse_battery_temp_info(data: bytes, offset: int = 3) -> Dict[str, Any]:
     return result
 
 
-def parse_battery_info(data: bytes, offset: int = 3) -> Dict[str, Any]:
+def parse_battery_info(data: bytes, offset: int = 3) -> dict[str, Any]:
     """Parse battery main information (registers 5042-5049)."""
-    result: Dict[str, Any] = {}
+    result: dict[str, Any] = {}
     if len(data) < offset + 12:
         _LOGGER.warning(
             "Battery info data too short: %s bytes (need %s)", len(data), offset + 12
@@ -339,9 +339,9 @@ def parse_battery_info(data: bytes, offset: int = 3) -> Dict[str, Any]:
     return result
 
 
-def parse_battery_alarm_info(data: bytes, offset: int = 3) -> Dict[str, Any]:
+def parse_battery_alarm_info(data: bytes, offset: int = 3) -> dict[str, Any]:
     """Parse battery alarm/status flags (registers 5100-5109)."""
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "cell_voltage_alarms": [],
         "cell_temperature_alarms": [],
         "protection_alarms": [],
@@ -476,9 +476,9 @@ def parse_battery_alarm_info(data: bytes, offset: int = 3) -> Dict[str, Any]:
     return result
 
 
-def parse_battery_device_info(data: bytes, offset: int = 3) -> Dict[str, Any]:
+def parse_battery_device_info(data: bytes, offset: int = 3) -> dict[str, Any]:
     """Parse battery device info (registers 5122-5129)."""
-    result: Dict[str, Any] = {}
+    result: dict[str, Any] = {}
     if len(data) < offset + 16:
         return result
     result["model"] = bytes_to_ascii(data, offset, 16).strip("\x00")
@@ -535,9 +535,9 @@ INVERTER_REGISTERS = [
 ]
 
 
-def parse_inverter_main_status(data: bytes, offset: int = 3) -> Dict[str, Any]:
+def parse_inverter_main_status(data: bytes, offset: int = 3) -> dict[str, Any]:
     """Parse inverter main status (registers 4000-4009)."""
-    result: Dict[str, Any] = {}
+    result: dict[str, Any] = {}
     if len(data) < offset + 18:
         return result
 
@@ -621,9 +621,9 @@ def parse_inverter_main_status(data: bytes, offset: int = 3) -> Dict[str, Any]:
     return result
 
 
-def parse_inverter_device_info(data: bytes, offset: int = 3) -> Dict[str, Any]:
+def parse_inverter_device_info(data: bytes, offset: int = 3) -> dict[str, Any]:
     """Parse inverter device info (registers 4303-4326)."""
-    result: Dict[str, Any] = {}
+    result: dict[str, Any] = {}
     if len(data) < offset + 48:
         return result
 
@@ -634,9 +634,9 @@ def parse_inverter_device_info(data: bytes, offset: int = 3) -> Dict[str, Any]:
     return result
 
 
-def parse_inverter_pv_info(data: bytes, offset: int = 3) -> Dict[str, Any]:
+def parse_inverter_pv_info(data: bytes, offset: int = 3) -> dict[str, Any]:
     """Parse inverter PV/solar info (registers 4327-4333)."""
-    result: Dict[str, Any] = {}
+    result: dict[str, Any] = {}
     if len(data) < offset + 12:
         return result
 
@@ -653,9 +653,9 @@ def parse_inverter_pv_info(data: bytes, offset: int = 3) -> Dict[str, Any]:
     return result
 
 
-def parse_inverter_settings_status(data: bytes, offset: int = 3) -> Dict[str, Any]:
+def parse_inverter_settings_status(data: bytes, offset: int = 3) -> dict[str, Any]:
     """Parse inverter settings and status (registers 4398-4417)."""
-    result: Dict[str, Any] = {}
+    result: dict[str, Any] = {}
     if len(data) < offset + 30:
         return result
 
@@ -677,9 +677,9 @@ def parse_inverter_settings_status(data: bytes, offset: int = 3) -> Dict[str, An
     return result
 
 
-def parse_inverter_statistics(data: bytes, offset: int = 3) -> Dict[str, Any]:
+def parse_inverter_statistics(data: bytes, offset: int = 3) -> dict[str, Any]:
     """Parse inverter energy statistics (registers 4543-4567)."""
-    result: Dict[str, Any] = {}
+    result: dict[str, Any] = {}
     if len(data) < offset + 10:
         return result
 
@@ -697,9 +697,9 @@ def parse_inverter_statistics(data: bytes, offset: int = 3) -> Dict[str, Any]:
     return result
 
 
-def parse_inverter_settings(data: bytes, offset: int = 3) -> Dict[str, Any]:
+def parse_inverter_settings(data: bytes, offset: int = 3) -> dict[str, Any]:
     """Parse inverter settings (registers 4441-4444)."""
-    result: Dict[str, Any] = {}
+    result: dict[str, Any] = {}
     if len(data) < offset + 8:
         return result
 
@@ -757,7 +757,7 @@ REGISTER_DEFINITIONS = {
 
 def parse_response(
     device_type: DeviceType, register: int, data: bytes
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Parse a Modbus response based on device type and register.
 
     Args:
@@ -788,6 +788,6 @@ def parse_response(
         return {}
 
 
-def get_registers_for_device(device_type: DeviceType) -> List[Dict]:
+def get_registers_for_device(device_type: DeviceType) -> list[dict]:
     """Get the list of registers to read for a device type."""
     return REGISTER_DEFINITIONS.get(device_type, [])
