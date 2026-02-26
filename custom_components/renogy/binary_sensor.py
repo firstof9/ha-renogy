@@ -24,18 +24,14 @@ async def async_setup_entry(hass, entry, async_add_devices):
 
     binary_sensors = []
     for device_id, device in coordinator.data.items():
-        for (
-            binary_sensor
-        ) in BINARY_SENSORS:  # pylint: disable=consider-using-dict-items
+        for binary_sensor in BINARY_SENSORS:  # pylint: disable=consider-using-dict-items
             temp_obj = RenogyBinarySensor(
                 BINARY_SENSORS[binary_sensor],
                 device_id,
                 coordinator,
                 entry,
             )
-            if (
-                binary_sensor in device.keys()
-            ):  # pylint: disable=consider-using-dict-items
+            if binary_sensor in device.keys():  # pylint: disable=consider-using-dict-items
                 if temp_obj not in binary_sensors:
                     binary_sensors.append(temp_obj)
             if binary_sensor in device["data"].keys():
@@ -64,7 +60,7 @@ class RenogyBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._type = sensor_description.key
         self._device_id = device_id
 
-        self._attr_name = f"{coordinator.data[device_id]["name"]} {self._name}"
+        self._attr_name = f"{coordinator.data[device_id]['name']} {self._name}"
         self._attr_unique_id = f"{self._name}_{device_id}"
 
     @property

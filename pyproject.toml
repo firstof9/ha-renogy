@@ -1,0 +1,48 @@
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "C",    # flake8-comprehensions
+    "B",    # flake8-bugbear
+    "D",    # pydocstyle
+    "UP",   # pyupgrade
+    "N",    # pep8-naming
+    "S",    # flake8-bandit
+    "A",    # flake8-builtins
+    "RUF",  # Ruff-specific rules
+]
+ignore = [
+    "D202", # No blank lines allowed after function docstring
+    "D203", # 1 blank line required before class docstring
+    "D213", # Multi-line docstring summary should start at the second line
+    "S101", # Use of assert detected (needed for pytest)
+    "RUF013", # PEP 484 prohibits implicit `Optional`
+    "S105", # Possible hardcoded password assigned to (false positives for config keys)
+    "C901", # Function too complex (legacy code)
+    "RUF002", # Ambiguous characters in docstrings (legacy code)
+    "S110", # `try`-`except`-`pass` detected (legacy code)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["A001", "A002", "D", "E501", "B017", "F841", "F811"]
+"custom_components/renogy/config_flow.py" = ["N813", "RUF012"]
+"custom_components/renogy/__init__.py" = ["N813"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"
+
+[tool.ruff.lint.isort]
+force-single-line = false
+known-first-party = ["custom_components.renogy"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"

@@ -3,9 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from homeassistant import config_entries, setup
-from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAIN
-from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
-from homeassistant.data_entry_flow import FlowResult, FlowResultType
+from homeassistant.data_entry_flow import FlowResultType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from renogyapi.exceptions import UrlNotFound
 
@@ -18,8 +16,6 @@ from custom_components.renogy.const import (
     CONF_MAC_ADDRESS,
     CONF_NAME,
     CONF_SECRET_KEY,
-    CONNECTION_TYPE_BLE,
-    CONNECTION_TYPE_CLOUD,
     DOMAIN,
 )
 
@@ -589,12 +585,13 @@ async def test_form_config_api_error(
     assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == step_id
 
-    with patch(
-        "custom_components.renogy.async_setup_entry",
-        return_value=True,
-    ) as mock_setup_entry, patch(
-        "custom_components.renogy.config_flow.api.get_devices"
-    ) as mock_api_error:
+    with (
+        patch(
+            "custom_components.renogy.async_setup_entry",
+            return_value=True,
+        ) as mock_setup_entry,
+        patch("custom_components.renogy.config_flow.api.get_devices") as mock_api_error,
+    ):
         mock_api_error.side_effect = Exception("General Error")
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], input
@@ -625,9 +622,10 @@ async def test_form_reconfigure_api_error(
     caplog,
 ):
     """Test we get the form."""
-    with caplog.at_level(logging.DEBUG), patch(
-        "custom_components.renogy.config_flow.api.get_devices"
-    ) as mock_api_error:
+    with (
+        caplog.at_level(logging.DEBUG),
+        patch("custom_components.renogy.config_flow.api.get_devices") as mock_api_error,
+    ):
         mock_api_error.side_effect = Exception("General Error")
         await setup.async_setup_component(hass, "persistent_notification", {})
         entry = MockConfigEntry(

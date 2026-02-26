@@ -139,7 +139,7 @@ async def _async_setup_ble_entry(
     hass: HomeAssistant, config_entry: ConfigEntry
 ) -> bool:
     """Set up BLE integration."""
-    from .ble_client import BLEDeviceManager, DeviceConfig  # noqa: E402
+    from .ble_client import BLEDeviceManager, DeviceConfig
 
     mac_address = config_entry.data.get(CONF_MAC_ADDRESS, "")
     device_type = config_entry.data.get(CONF_DEVICE_TYPE, "controller")
@@ -291,7 +291,7 @@ class BLEUpdateCoordinator(DataUpdateCoordinator):
 
     def __init__(self, hass, interval, config, ble_manager):
         """Initialize."""
-        from .ble_validator import DataValidatorManager  # noqa: E402
+        from .ble_validator import DataValidatorManager
 
         self.interval = timedelta(seconds=interval)
         self.name = f"({config.data.get(CONF_NAME)})"

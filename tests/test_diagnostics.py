@@ -1,12 +1,9 @@
 """Test the Mail and Packages diagnostics."""
 
-from unittest.mock import patch
-
 import pytest
-from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.renogy.const import DOMAIN, CONF_SECRET_KEY, CONF_ACCESS_KEY
+from custom_components.renogy.const import CONF_ACCESS_KEY, CONF_SECRET_KEY, DOMAIN
 from custom_components.renogy.diagnostics import (
     async_get_config_entry_diagnostics,
     async_get_device_diagnostics,

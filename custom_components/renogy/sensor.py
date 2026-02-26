@@ -91,7 +91,7 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
         self._state = None
 
         self._attr_icon = sensor_description.icon
-        self._attr_name = f"{coordinator.data[device_id]["name"]} {self._name}"
+        self._attr_name = f"{coordinator.data[device_id]['name']} {self._name}"
         self._attr_unique_id = f"{self._name}_{device_id}"
 
     @property

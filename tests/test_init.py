@@ -1,15 +1,25 @@
 """Test renogy setup process."""
 
 import logging
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from homeassistant import config_entries
 from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAIN
 from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.update_coordinator import UpdateFailed
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.renogy.const import DOMAIN
+from custom_components.renogy import RenogyUpdateCoordinator
+from custom_components.renogy.const import (
+    CONF_ACCESS_KEY,
+    CONF_CONNECTION_TYPE,
+    CONF_MAC_ADDRESS,
+    CONF_NAME,
+    CONF_SECRET_KEY,
+    DOMAIN,
+)
 
 from .const import CONFIG_DATA
 
@@ -160,7 +170,7 @@ async def test_async_remove_config_entry_device_with_runtime_data_device_exists(
 
         # Verify get_device was called with the correct identifier
         identifiers = list(device.identifiers)
-        domain_identifiers = [id for id in identifiers if id[0] == DOMAIN]
+        domain_identifiers = [ident for ident in identifiers if ident[0] == DOMAIN]
         if domain_identifiers:
             mock_runtime_data.get_device.assert_called()
 
@@ -382,23 +392,6 @@ async def test_async_remove_config_entry_device_integration(
             assert result is True
 
 
-"""Test detailed coverage for __init__.py."""
-import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
-from homeassistant import config_entries
-from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers.update_coordinator import UpdateFailed
-from custom_components.renogy.const import (
-    DOMAIN,
-    CONF_CONNECTION_TYPE,
-    CONF_MAC_ADDRESS,
-    CONF_NAME,
-    CONF_SECRET_KEY,
-    CONF_ACCESS_KEY,
-)
-from custom_components.renogy import RenogyUpdateCoordinator
-from pytest_homeassistant_custom_component.common import MockConfigEntry
-
 pytestmark = pytest.mark.asyncio
 
 
@@ -457,13 +450,15 @@ async def test_setup_ble_exception_in_refresh(hass):
     )
     entry.add_to_hass(hass)
 
-    with patch(
-        "custom_components.renogy.ble_client.BLEDeviceManager"
-    ) as mock_manager_cls, patch(
-        "custom_components.renogy.BLEUpdateCoordinator.async_refresh",
-        side_effect=Exception("Major Fail"),
+    with (
+        patch(
+            "custom_components.renogy.ble_client.BLEDeviceManager"
+        ) as mock_manager_cls,
+        patch(
+            "custom_components.renogy.BLEUpdateCoordinator.async_refresh",
+            side_effect=Exception("Major Fail"),
+        ),
     ):
-
         mock_manager = mock_manager_cls.return_value
         mock_manager.disconnect_all = AsyncMock()
 
