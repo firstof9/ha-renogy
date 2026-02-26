@@ -585,13 +585,9 @@ async def test_form_config_api_error_cloud(
     assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == step_id
 
-    with (
-        patch(
-            "custom_components.renogy.async_setup_entry",
-            return_value=True,
-        ) as mock_setup_entry,
-        patch("custom_components.renogy.config_flow.api.get_devices") as mock_api_error,
-    ):
+    with patch(
+        "custom_components.renogy.config_flow.api.get_devices"
+    ) as mock_api_error:
         mock_api_error.side_effect = Exception("General Error")
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], input
