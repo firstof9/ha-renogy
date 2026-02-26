@@ -77,8 +77,8 @@ class RenogyBinarySensor(CoordinatorEntity, BinarySensorEntity):
             if self._type == "status":
                 return data[self._type] == "online"
 
-        data = self.coordinator.data[self._device_id]["data"]
-        if self._type not in data:
+        data = self.coordinator.data[self._device_id].get("data")
+        if data is None or self._type not in data:
             _LOGGER.info("binary_sensor [%s] not supported.", self._type)
             return False
         _LOGGER.debug("binary_sensor [%s]: %s", self._name, data[self._type][0])

@@ -109,30 +109,31 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
             self.update_icon()
             return self.coordinator.data[self._device_id][self._type]
 
-        data = self.coordinator.data[self._device_id]["data"]
-        if data is None:
+        data = self.coordinator.data[self._device_id].get("data")
+        if data is None or self._type not in data:
             self._state = None
-        if self._type in data.keys():
-            if self._type == "output":
-                try:
-                    value = OUTPUT_MODES[data[self._type][0]]
-                except KeyError:
-                    value = None
-            elif self._type == "batteryType" and isinstance(data[self._type][0], int):
-                try:
-                    value = BATTERY_TYPE[data[self._type][0]]
-                except KeyError:
-                    value = None
-            else:
-                value = data[self._type][0]
-            self._state = value
+            return self._state
+
+        if self._type == "output":
+            try:
+                value = OUTPUT_MODES[data[self._type][0]]
+            except KeyError:
+                value = None
+        elif self._type == "batteryType" and isinstance(data[self._type][0], int):
+            try:
+                value = BATTERY_TYPE[data[self._type][0]]
+            except KeyError:
+                value = None
+        else:
+            value = data[self._type][0]
+        self._state = value
         _LOGGER.debug("Sensor [%s] updated value: %s", self._type, self._state)
         return self._state
 
     @property
     def native_unit_of_measurement(self) -> Any:
         """Return the unit of measurement."""
-        data = self.coordinator.data[self._device_id]["data"]
+        data = self.coordinator.data[self._device_id].get("data")
         if not data or self._type not in data:
             return self.unit
 

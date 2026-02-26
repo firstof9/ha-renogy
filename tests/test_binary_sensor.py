@@ -43,3 +43,72 @@ async def test_binary_sensors(hass, mock_api, caplog):
         state = hass.states.get("binary_sensor.rng_ctrl_rvr40_status")
         assert state
         assert state.state == "on"
+
+
+async def test_binary_sensor_unsupported(hass, mock_api, caplog):
+    """Test unsupported binary sensor."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title=DEVICE_NAME,
+        data=CONFIG_DATA,
+    )
+
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
+    device_id = "12345678903"
+
+    # Find the entity
+    from homeassistant.helpers import entity_registry as er
+
+    registry = er.async_get(hass)
+    entity_id = registry.async_get_entity_id(
+        "binary_sensor", DOMAIN, f"Heating Mode_{device_id}"
+    )
+
+    # This is a bit hacky but we need the actual entity object
+    from homeassistant.helpers.entity_component import EntityComponent
+
+    component: EntityComponent = hass.data["binary_sensor"]
+    entity = component.get_entity(entity_id)
+
+    with caplog.at_level(logging.INFO):
+        # Remove the key to trigger the unsupported branch in is_on
+        if "heatingModeStatus" in coordinator.data[device_id]["data"]:
+            del coordinator.data[device_id]["data"]["heatingModeStatus"]
+
+        assert entity.is_on is False
+        assert "binary_sensor [heatingModeStatus] not supported." in caplog.text
+
+
+async def test_sensor_coverage(hass, mock_api, caplog):
+    """Test sensor coverage for edge cases."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title=DEVICE_NAME,
+        data=CONFIG_DATA,
+    )
+
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
+    device_id = "12345678903"
+
+    # Find a sensor entity
+    from homeassistant.helpers.entity_component import EntityComponent
+
+    component: EntityComponent = hass.data["sensor"]
+    entity_id = "sensor.rbt100lfp12sh_g1_present_voltage"
+    entity = component.get_entity(entity_id)
+
+    # Trigger line 114: self._state = None inside if data is None:
+    original_data = coordinator.data[device_id]["data"]
+    coordinator.data[device_id]["data"] = None
+    assert entity.native_value is None
+    coordinator.data[device_id]["data"] = original_data
+
+    assert entity.native_unit_of_measurement == "V"
