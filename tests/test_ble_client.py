@@ -1,6 +1,5 @@
 """Test BLE client implementation."""
 
-import asyncio
 import logging
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
@@ -13,7 +12,6 @@ from custom_components.renogy.ble_client import (
     BLEDeviceManager,
     DeviceConfig,
     DeviceData,
-    DeviceType,
     PersistentBLEConnection,
     scan_for_devices,
 )
@@ -51,14 +49,16 @@ def mock_bleak_client():
 
 async def test_persistent_connection_connect(mock_bleak_client):
     """Test connection establishment."""
-    with patch(
-        "custom_components.renogy.ble_client.BleakClient",
-        return_value=mock_bleak_client,
-    ), patch(
-        "custom_components.renogy.ble_client.BleakScanner.find_device_by_address",
-        return_value=MagicMock(),
+    with (
+        patch(
+            "custom_components.renogy.ble_client.BleakClient",
+            return_value=mock_bleak_client,
+        ),
+        patch(
+            "custom_components.renogy.ble_client.BleakScanner.find_device_by_address",
+            return_value=MagicMock(),
+        ),
     ):
-
         config = DeviceConfig("dev1", "AA:BB:CC:DD:EE:FF", "controller")
         connection = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [config])
 
@@ -72,14 +72,16 @@ async def test_persistent_connection_connect(mock_bleak_client):
 
 async def test_read_registers_success(mock_bleak_client):
     """Test reading registers successfully."""
-    with patch(
-        "custom_components.renogy.ble_client.BleakClient",
-        return_value=mock_bleak_client,
-    ), patch(
-        "custom_components.renogy.ble_client.BleakScanner.find_device_by_address",
-        return_value=MagicMock(),
+    with (
+        patch(
+            "custom_components.renogy.ble_client.BleakClient",
+            return_value=mock_bleak_client,
+        ),
+        patch(
+            "custom_components.renogy.ble_client.BleakScanner.find_device_by_address",
+            return_value=MagicMock(),
+        ),
     ):
-
         config = DeviceConfig("dev1", "AA:BB:CC:DD:EE:FF", "controller")
         connection = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [config])
         await connection.connect()
@@ -116,39 +118,45 @@ async def test_read_registers_success(mock_bleak_client):
 
 async def test_read_registers_timeout(mock_bleak_client):
     """Test read timeout."""
-    with patch(
-        "custom_components.renogy.ble_client.BleakClient",
-        return_value=mock_bleak_client,
-    ), patch(
-        "custom_components.renogy.ble_client.BleakScanner.find_device_by_address",
-        return_value=MagicMock(),
+    with (
+        patch(
+            "custom_components.renogy.ble_client.BleakClient",
+            return_value=mock_bleak_client,
+        ),
+        patch(
+            "custom_components.renogy.ble_client.BleakScanner.find_device_by_address",
+            return_value=MagicMock(),
+        ),
     ):
-
         config = DeviceConfig("dev1", "AA:BB:CC:DD:EE:FF", "controller")
         connection = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [config])
         await connection.connect()
 
         # Adjust timeout to be fast for test
-        with patch("asyncio.wait_for", side_effect=asyncio.TimeoutError):
+        with patch("custom_components.renogy.ble_client.NOTIFICATION_TIMEOUT", 0.01):
             data = await connection.read_registers(1, 0, 1)
             assert data is None
 
 
 async def test_poll_device(mock_bleak_client):
     """Test full device polling."""
-    with patch(
-        "custom_components.renogy.ble_client.BleakClient",
-        return_value=mock_bleak_client,
-    ), patch(
-        "custom_components.renogy.ble_client.BleakScanner.find_device_by_address",
-        return_value=MagicMock(),
-    ), patch(
-        "custom_components.renogy.ble_client.validate_modbus_response",
-        return_value=True,
-    ), patch(
-        "custom_components.renogy.ble_client.PersistentBLEConnection.read_registers"
-    ) as mock_read:
-
+    with (
+        patch(
+            "custom_components.renogy.ble_client.BleakClient",
+            return_value=mock_bleak_client,
+        ),
+        patch(
+            "custom_components.renogy.ble_client.BleakScanner.find_device_by_address",
+            return_value=MagicMock(),
+        ),
+        patch(
+            "custom_components.renogy.ble_client.validate_modbus_response",
+            return_value=True,
+        ),
+        patch(
+            "custom_components.renogy.ble_client.PersistentBLEConnection.read_registers"
+        ) as mock_read,
+    ):
         # Setup mock read to return dummy data for each call
         mock_read.return_value = b"\x00" * 20  # Dummy data
 
@@ -159,14 +167,16 @@ async def test_poll_device(mock_bleak_client):
         # Mock get_registers_for_device and parse_response
         fake_registers = [{"name": "fake_reg", "register": 100, "words": 1}]
 
-        with patch(
-            "custom_components.renogy.ble_client.get_registers_for_device",
-            return_value=fake_registers,
-        ), patch(
-            "custom_components.renogy.ble_client.parse_response",
-            return_value={"fake_val": 123},
+        with (
+            patch(
+                "custom_components.renogy.ble_client.get_registers_for_device",
+                return_value=fake_registers,
+            ),
+            patch(
+                "custom_components.renogy.ble_client.parse_response",
+                return_value={"fake_val": 123},
+            ),
         ):
-
             data = await connection.poll_device(config)
             assert data["fake_val"] == 123
             assert data["__device"] == "dev1"
@@ -279,14 +289,11 @@ async def test_connection_retry_logic():
     """Test connection retry logic when device not found initially."""
     conn = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [])
 
-    with patch(
-        "custom_components.renogy.ble_client.BleakScanner"
-    ) as mock_scanner, patch(
-        "custom_components.renogy.ble_client.BleakClient"
-    ) as mock_client_cls, patch(
-        "asyncio.sleep", new_callable=AsyncMock
-    ) as mock_sleep:
-
+    with (
+        patch("custom_components.renogy.ble_client.BleakScanner") as mock_scanner,
+        patch("custom_components.renogy.ble_client.BleakClient") as mock_client_cls,
+        patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep,
+    ):
         # 1. find_device_by_address returns None initially
         # 2. discover returns empty list
         # 3. Next attempt find_device returns a device
@@ -317,10 +324,10 @@ async def test_connection_retry_fail_after_3():
     """Test connection failure after 3 attempts."""
     conn = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [])
 
-    with patch(
-        "custom_components.renogy.ble_client.BleakScanner"
-    ) as mock_scanner, patch("asyncio.sleep", new_callable=AsyncMock):
-
+    with (
+        patch("custom_components.renogy.ble_client.BleakScanner") as mock_scanner,
+        patch("asyncio.sleep", new_callable=AsyncMock),
+    ):
         mock_scanner.find_device_by_address = AsyncMock(return_value=None)
         mock_scanner.discover = AsyncMock(return_value=[])
 
@@ -333,14 +340,11 @@ async def test_connection_bleak_error():
     """Test handling of BleakError during connect."""
     conn = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [])
 
-    with patch(
-        "custom_components.renogy.ble_client.BleakScanner"
-    ) as mock_scanner, patch(
-        "custom_components.renogy.ble_client.BleakClient"
-    ) as mock_client_cls, patch(
-        "asyncio.sleep", new_callable=AsyncMock
+    with (
+        patch("custom_components.renogy.ble_client.BleakScanner") as mock_scanner,
+        patch("custom_components.renogy.ble_client.BleakClient") as mock_client_cls,
+        patch("asyncio.sleep", new_callable=AsyncMock),
     ):
-
         mock_device = MagicMock(spec=BLEDevice)
         mock_scanner.find_device_by_address = AsyncMock(return_value=mock_device)
 
@@ -519,12 +523,10 @@ async def test_connect_full_scan_fallback():
     """Test falling back to full scan when find_device_by_address fails."""
     conn = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [])
 
-    with patch(
-        "custom_components.renogy.ble_client.BleakScanner"
-    ) as mock_scanner, patch(
-        "custom_components.renogy.ble_client.BleakClient"
-    ) as mock_client_cls:
-
+    with (
+        patch("custom_components.renogy.ble_client.BleakScanner") as mock_scanner,
+        patch("custom_components.renogy.ble_client.BleakClient") as mock_client_cls,
+    ):
         # find_device_by_address returns None
         mock_scanner.find_device_by_address = AsyncMock(return_value=None)
 
@@ -548,14 +550,11 @@ async def test_connect_post_connect_check_fails():
     """Test connection considered failed if is_connected is False after connect()."""
     conn = PersistentBLEConnection("AA:BB:CC:DD:EE:FF", [])
 
-    with patch(
-        "custom_components.renogy.ble_client.BleakScanner"
-    ) as mock_scanner, patch(
-        "custom_components.renogy.ble_client.BleakClient"
-    ) as mock_client_cls, patch(
-        "asyncio.sleep", new_callable=AsyncMock
+    with (
+        patch("custom_components.renogy.ble_client.BleakScanner") as mock_scanner,
+        patch("custom_components.renogy.ble_client.BleakClient") as mock_client_cls,
+        patch("asyncio.sleep", new_callable=AsyncMock),
     ):
-
         mock_device = MagicMock(spec=BLEDevice)
         mock_scanner.find_device_by_address = AsyncMock(return_value=mock_device)
 
@@ -629,18 +628,20 @@ async def test_poll_device_no_data_warning(caplog):
 
     fake_regs = [{"name": "fake", "register": 1, "words": 1}]
 
-    with patch(
-        "custom_components.renogy.ble_client.get_registers_for_device",
-        return_value=fake_regs,
-    ), patch.object(
-        conn, "read_registers", return_value=b"\x01\x03\x02\x00\x00\x00\x00"
-    ), patch(
-        "custom_components.renogy.ble_client.validate_modbus_response",
-        return_value=True,
-    ), patch(
-        "custom_components.renogy.ble_client.parse_response", return_value={}
+    with (
+        patch(
+            "custom_components.renogy.ble_client.get_registers_for_device",
+            return_value=fake_regs,
+        ),
+        patch.object(
+            conn, "read_registers", return_value=b"\x01\x03\x02\x00\x00\x00\x00"
+        ),
+        patch(
+            "custom_components.renogy.ble_client.validate_modbus_response",
+            return_value=True,
+        ),
+        patch("custom_components.renogy.ble_client.parse_response", return_value={}),
     ):
-
         with caplog.at_level(logging.WARNING):
             data = await conn.poll_device(config)
             assert data == {}
@@ -753,14 +754,17 @@ async def test_poll_device_invalid_response():
 
     fake_regs = [{"name": "fake", "register": 1, "words": 1}]
 
-    with patch(
-        "custom_components.renogy.ble_client.get_registers_for_device",
-        return_value=fake_regs,
-    ), patch.object(conn, "read_registers", return_value=b"\x00" * 5), patch(
-        "custom_components.renogy.ble_client.validate_modbus_response",
-        return_value=False,
+    with (
+        patch(
+            "custom_components.renogy.ble_client.get_registers_for_device",
+            return_value=fake_regs,
+        ),
+        patch.object(conn, "read_registers", return_value=b"\x00" * 5),
+        patch(
+            "custom_components.renogy.ble_client.validate_modbus_response",
+            return_value=False,
+        ),
     ):
-
         data = await conn.poll_device(config)
         assert data == {}
 
@@ -772,11 +776,13 @@ async def test_poll_device_no_data_received():
 
     fake_regs = [{"name": "fake", "register": 1, "words": 1}]
 
-    with patch(
-        "custom_components.renogy.ble_client.get_registers_for_device",
-        return_value=fake_regs,
-    ), patch.object(conn, "read_registers", return_value=None):
-
+    with (
+        patch(
+            "custom_components.renogy.ble_client.get_registers_for_device",
+            return_value=fake_regs,
+        ),
+        patch.object(conn, "read_registers", return_value=None),
+    ):
         data = await conn.poll_device(config)
         assert data == {}
 
