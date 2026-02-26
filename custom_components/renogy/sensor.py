@@ -120,16 +120,11 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
             self._state = None
             return self._state
 
+        raw = val[0]
         if self._type == "output":
-            try:
-                value = OUTPUT_MODES[val[0]]
-            except KeyError:
-                value = None
-        elif self._type == "batteryType" and isinstance(val[0], int):
-            try:
-                value = BATTERY_TYPE[val[0]]
-            except KeyError:
-                value = None
+            value = OUTPUT_MODES.get(raw)
+        elif self._type == "batteryType" and isinstance(raw, int):
+            value = BATTERY_TYPE.get(raw)
         else:
             value = val[0]
         self._state = value
