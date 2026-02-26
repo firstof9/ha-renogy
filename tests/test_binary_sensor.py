@@ -118,7 +118,7 @@ async def test_sensor_coverage(hass, mock_api, caplog):
     coordinator.data[device_id]["data"]["presentVolts"] = []
     assert entity.native_value is None
     coordinator.data[device_id]["data"]["presentVolts"] = original_val
-
-    # Trigger structural guard in native_unit_of_measurement (line 146-147)
-    # presentVolts in realtime_data.json is 13.0 (not a tuple)
     assert entity.native_unit_of_measurement == "V"
+    coordinator.data[device_id]["data"]["presentVolts"] = (13.0,)
+    assert entity.native_unit_of_measurement == "V"
+    coordinator.data[device_id]["data"]["presentVolts"] = original_val

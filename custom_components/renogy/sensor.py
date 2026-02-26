@@ -143,13 +143,14 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
         if not data or self._type not in data:
             return self.unit
 
-        if not isinstance(data[self._type], tuple):
+        val = data[self._type]
+        if not isinstance(val, tuple) or len(val) < 2:
             return self.unit
 
-        if data[self._type][1] in FILTER_UNITS:
+        if val[1] in FILTER_UNITS:
             return self.unit
 
-        if data[self._type][1] == "":
+        if val[1] == "":
             if self.unit is None:
                 return None
             return self.unit
