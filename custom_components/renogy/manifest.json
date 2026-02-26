@@ -2,7 +2,8 @@
     "domain": "renogy",
     "name": "Renogy",
     "after_dependencies": [
-        "bluetooth"
+        "bluetooth",
+        "bluetooth_adapters"
     ],
     "bluetooth": [
         {
@@ -16,13 +17,11 @@
     "documentation": "https://github.com/firstof9/ha-renogy/",
     "import_executor": true,
     "iot_class": "local_polling",
-    "issue_tracker": "https://github.com/firstof9/ha-renogy/issues",
     "loggers": [
         "renogyapi"
     ],
     "requirements": [
-        "py_renogy==1.2.3",
-        "bleak"
+        "py_renogy==1.2.3"
     ],
     "version": "0.0.0-dev"
 }

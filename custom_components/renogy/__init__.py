@@ -153,7 +153,7 @@ async def _async_setup_ble_entry(
         device_id=device_id,
     )
 
-    ble_manager = BLEDeviceManager([device_config])
+    ble_manager = BLEDeviceManager(hass, [device_config])
 
     interval = 30
     coordinator = BLEUpdateCoordinator(hass, interval, config_entry, ble_manager)

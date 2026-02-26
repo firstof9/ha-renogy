@@ -12,11 +12,16 @@ import inspect
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
-from bleak import BleakClient, BleakScanner
+from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.exc import BleakError
+
+from homeassistant.components import bluetooth
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
 from .ble_parsers import DeviceType, get_registers_for_device, parse_response
 from .ble_utils import create_modbus_read_request, validate_modbus_response
@@ -99,8 +104,11 @@ class PersistentBLEConnection:
     (multiple devices on one BT module).
     """
 
-    def __init__(self, mac_address: str, device_configs: List[DeviceConfig]) -> None:
+    def __init__(
+        self, hass: HomeAssistant, mac_address: str, device_configs: List[DeviceConfig]
+    ) -> None:
         """Initialize the connection."""
+        self.hass = hass
         self.mac_address = mac_address
         self.device_configs = device_configs
         self.client: Optional[BleakClient] = None
@@ -155,21 +163,9 @@ class PersistentBLEConnection:
 
                 _LOGGER.info("[%s] Connecting...", _obfuscate_mac(self.mac_address))
 
-                device = await BleakScanner.find_device_by_address(
-                    self.mac_address,
-                    timeout=CONNECTION_TIMEOUT,
+                device = bluetooth.async_ble_device_from_address(
+                    self.hass, self.mac_address
                 )
-
-                if not device:
-                    _LOGGER.debug(
-                        "[%s] Not found, running full scan...",
-                        _obfuscate_mac(self.mac_address),
-                    )
-                    devices = await BleakScanner.discover(timeout=10.0)
-                    for found in devices:
-                        if found.address.upper() == self.mac_address.upper():
-                            device = found
-                            break
 
                 if not device:
                     _LOGGER.warning(
@@ -463,10 +459,12 @@ class BLEDeviceManager:
 
     def __init__(
         self,
+        hass: HomeAssistant,
         device_configs: List[DeviceConfig],
         on_data_callback: Optional[Callable] = None,
     ) -> None:
         """Initialize the device manager."""
+        self.hass = hass
         self._connections: Dict[str, PersistentBLEConnection] = {}
         self._device_data: Dict[str, DeviceData] = {}
 
@@ -481,7 +479,7 @@ class BLEDeviceManager:
             self._device_data[device_key] = DeviceData(config=config)
 
         for mac, configs in devices_by_mac.items():
-            self._connections[mac] = PersistentBLEConnection(mac, configs)
+            self._connections[mac] = PersistentBLEConnection(self.hass, mac, configs)
             if len(configs) > 1:
                 _LOGGER.info(
                     "Hub mode: %s devices on %s", len(configs), _obfuscate_mac(mac)
@@ -587,10 +585,13 @@ class BLEDeviceManager:
         _LOGGER.info("Device manager stopped")
 
 
-async def scan_for_devices(timeout: float = 15.0, show_all: bool = False) -> List[Dict]:
+async def scan_for_devices(
+    hass: HomeAssistant, timeout: float = 15.0, show_all: bool = False
+) -> List[Dict]:
     """Scan for nearby Renogy BLE devices.
 
     Args:
+        hass: Home Assistant instance.
         timeout: Scan timeout in seconds.
         show_all: If True, show all BLE devices, not just Renogy ones.
 
@@ -600,7 +601,8 @@ async def scan_for_devices(timeout: float = 15.0, show_all: bool = False) -> Lis
     _LOGGER.info("Scanning for BLE devices (timeout: %ss)...", timeout)
 
     try:
-        devices = await BleakScanner.discover(timeout=timeout)
+        scanner = bluetooth.async_get_scanner(hass)
+        devices = await scanner.discover(timeout=timeout)
     except Exception:  # pylint: disable=broad-except
         _LOGGER.error("Scan failed", exc_info=True)
         return []
