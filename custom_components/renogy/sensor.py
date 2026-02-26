@@ -144,7 +144,7 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
             return self.unit
 
         val = data[self._type]
-        if not isinstance(val, tuple) or len(val) < 2:
+        if not isinstance(val, list | tuple) or len(val) < 2:
             return self.unit
 
         if val[1] in FILTER_UNITS:
@@ -155,7 +155,7 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
                 return None
             return self.unit
 
-        return data[self._type][1]
+        return val[1]
 
     @property
     def available(self) -> bool:

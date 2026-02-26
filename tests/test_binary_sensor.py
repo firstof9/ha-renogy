@@ -106,6 +106,7 @@ async def test_sensor_coverage(hass, mock_api, caplog):
     component: EntityComponent = hass.data["sensor"]
     entity_id = "sensor.rbt100lfp12sh_g1_present_voltage"
     entity = component.get_entity(entity_id)
+    assert entity is not None, f"entity {entity_id} not found"
 
     # Trigger structural guards in native_value (lines 118-121)
     original_data = coordinator.data[device_id]["data"]
