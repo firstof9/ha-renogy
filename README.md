@@ -80,7 +80,7 @@ For **separate BT modules** (one per device), use `device_id: 255`.
 
 ## Exposed Entities
 
-This is dependent on type of device. Here are some examples of the entities that are exposed for the ONE Core and its connected devices.
+This is dependent on the type of device. Here are some examples of the entities that are exposed for the ONE Core and its connected devices.
 
 Renogy ONE Core and connected devices:
 

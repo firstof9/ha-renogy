@@ -45,17 +45,16 @@ jobs:
     strategy:
       matrix:
         python-version:
-          # - "3.10"
-          # - "3.11"
           - "3.13"
+          - "3.14"
 
     steps:
       - name: 📥 Checkout the repository
         uses: actions/checkout@v4
-      - name: 🛠️ Set up Python
-        uses: actions/setup-python@v5
         with:
           fetch-depth: 2
+      - name: 🛠️ Set up Python
+        uses: actions/setup-python@v5
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
@@ -66,6 +65,7 @@ jobs:
       - name: 🏃 Test with tox
         run: tox
       - name: 📤 Upload coverage to Codecov
+        if: matrix.python-version == '3.14'
         uses: "actions/upload-artifact@v4"
         with:
           name: coverage-data

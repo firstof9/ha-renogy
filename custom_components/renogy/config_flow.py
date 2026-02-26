@@ -58,7 +58,7 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     # ------------------------------------------------------------------
 
     async def async_step_user(
-        self, user_input: dict[str, Any] = None
+        self, user_input: dict[str, Any] | None = None
     ) -> dict[str, Any]:
         """Handle a flow initialized by the user."""
         if user_input is not None:
@@ -110,7 +110,7 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         return await self.async_step_bluetooth_confirm()
 
     async def async_step_bluetooth_confirm(
-        self, user_input: dict[str, Any] = None
+        self, user_input: dict[str, Any] | None = None
     ) -> dict[str, Any]:
         """Confirm Bluetooth discovery and configure device."""
         self._errors = {}
@@ -156,7 +156,7 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     # ------------------------------------------------------------------
 
     async def async_step_cloud(
-        self, user_input: dict[str, Any] = None
+        self, user_input: dict[str, Any] | None = None
     ) -> dict[str, Any]:
         """Handle cloud API configuration step."""
         self._errors = {}
@@ -208,7 +208,9 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     # Step 2b: BLE configuration (manual)
     # ------------------------------------------------------------------
 
-    async def async_step_ble(self, user_input: dict[str, Any] = None) -> dict[str, Any]:
+    async def async_step_ble(
+        self, user_input: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Handle BLE configuration step."""
         self._errors = {}
 

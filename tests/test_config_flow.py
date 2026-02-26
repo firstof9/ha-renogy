@@ -563,7 +563,7 @@ async def test_form_reconfigure_api_error(
         ),
     ],
 )
-async def test_form_config_api_error(
+async def test_form_config_api_error_cloud(
     input,
     step_id,
     hass,
@@ -614,7 +614,7 @@ async def test_form_config_api_error(
         ),
     ],
 )
-async def test_form_reconfigure_api_error(
+async def test_form_reconfigure_api_error_handles_exception(
     input,
     step_id,
     hass,
