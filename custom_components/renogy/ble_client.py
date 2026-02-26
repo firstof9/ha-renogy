@@ -169,8 +169,10 @@ class PersistentBLEConnection:
 
                 if not device:
                     _LOGGER.warning(
-                        "[%s] Device not found", _obfuscate_mac(self.mac_address)
+                        "[%s] Device not found, triggering rediscovery",
+                        _obfuscate_mac(self.mac_address),
                     )
+                    bluetooth.async_rediscover_address(self.hass, self.mac_address)
                     continue
 
                 self.client = BleakClient(
