@@ -16,6 +16,7 @@ from renogyapi.exceptions import (
     UrlNotFound,
 )
 
+from .ble_detector import async_detect_device_type
 from .const import (
     CONF_ACCESS_KEY,
     CONF_CONNECTION_TYPE,
@@ -134,7 +135,13 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         if self._discovered_device is None:
             return self.async_abort(reason="discovery_device_missing")
+
         device_name = self._discovered_device.name or DEFAULT_BLE_NAME
+
+        if not hasattr(self, "_detected_type"):
+            self._detected_type, self._detected_id = await async_detect_device_type(
+                self.hass, self._discovered_device.address
+            )
 
         return self.async_show_form(
             step_id="bluetooth_confirm",
@@ -142,8 +149,10 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 defaults={
                     CONF_NAME: device_name,
                     CONF_MAC_ADDRESS: self._discovered_device.address,
-                    CONF_DEVICE_TYPE: "controller",
-                    CONF_DEVICE_ID: DEFAULT_DEVICE_ID,
+                    CONF_DEVICE_TYPE: getattr(self, "_detected_type", None)
+                    or "controller",
+                    CONF_DEVICE_ID: getattr(self, "_detected_id", None)
+                    or DEFAULT_DEVICE_ID,
                 },
                 show_mac=False,
             ),
@@ -211,7 +220,7 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_ble(
         self, user_input: dict[str, Any] | None = None
     ) -> dict[str, Any]:
-        """Handle BLE configuration step."""
+        """Handle BLE configuration step (MAC Address)."""
         self._errors = {}
 
         if user_input is not None:
@@ -233,23 +242,54 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 await self.async_set_unique_id(mac_address)
                 self._abort_if_unique_id_configured()
 
-                data = {
-                    **self._data,
-                    **user_input,
-                    CONF_MAC_ADDRESS: mac_address,
-                }
-                title = user_input.get(CONF_NAME, DEFAULT_BLE_NAME)
-                return self.async_create_entry(title=title, data=data)
+                self._data.update(user_input)
+                self._data[CONF_MAC_ADDRESS] = mac_address
+
+                if not hasattr(self, "_detected_type"):
+                    (
+                        self._detected_type,
+                        self._detected_id,
+                    ) = await async_detect_device_type(self.hass, mac_address)
+                return await self.async_step_ble_step2()
 
         return self.async_show_form(
             step_id="ble",
             data_schema=_get_ble_schema(
                 defaults={
                     CONF_NAME: DEFAULT_BLE_NAME,
-                    CONF_DEVICE_TYPE: "controller",
-                    CONF_DEVICE_ID: DEFAULT_DEVICE_ID,
                 },
                 show_mac=True,
+                mac_only=True,
+            ),
+            errors=self._errors,
+        )
+
+    async def async_step_ble_step2(
+        self, user_input: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        """Handle BLE configuration step (Device Type/ID)."""
+        self._errors = {}
+
+        if user_input is not None:
+            data = {
+                **self._data,
+                **user_input,
+                CONF_CONNECTION_TYPE: CONNECTION_TYPE_BLE,
+            }
+            title = data.get(CONF_NAME, DEFAULT_BLE_NAME)
+            return self.async_create_entry(title=title, data=data)
+
+        return self.async_show_form(
+            step_id="ble_step2",
+            data_schema=_get_ble_schema(
+                defaults={
+                    CONF_DEVICE_TYPE: getattr(self, "_detected_type", None)
+                    or "controller",
+                    CONF_DEVICE_ID: getattr(self, "_detected_id", None)
+                    or DEFAULT_DEVICE_ID,
+                },
+                show_mac=False,
+                mac_only=False,
             ),
             errors=self._errors,
         )
@@ -380,6 +420,7 @@ def _get_cloud_schema(
 def _get_ble_schema(
     defaults: dict[str, Any],
     show_mac: bool = True,
+    mac_only: bool = False,
 ) -> vol.Schema:
     """Build the BLE configuration schema.
 
@@ -387,12 +428,34 @@ def _get_ble_schema(
         defaults: Default values for each field.
         show_mac: Whether to include the MAC address field.
                   False for auto-discovery (MAC is already known).
+        mac_only: Whether to only show Name & MAC (for manual entry step 1).
     """
-    schema_dict: dict[vol.Marker, Any] = {
-        vol.Optional(
-            CONF_NAME, default=defaults.get(CONF_NAME, DEFAULT_BLE_NAME)
-        ): cv.string,
-    }
+    schema_dict: dict[vol.Marker, Any] = {}
+
+    if show_mac or mac_only or not defaults.get(CONF_MAC_ADDRESS):
+        # We always want the user to be able to set a Name,
+        # unless it's step 2 of manual flow
+        # Actually for step 2 of manual flow, we already have the name.
+        if not (
+            not show_mac and not mac_only and defaults.get(CONF_DEVICE_TYPE) is not None
+        ):
+            # Wait, auto-discovery calls with show_mac=False. It needs Name.
+            pass
+
+    # Simplified logic:
+    # Auto-discovery: show_mac=False, mac_only=False -> Needs Name, Type, ID
+    # Reconfigure: show_mac=True, mac_only=False -> Needs Name, MAC, Type, ID
+    # Manual Step 1: show_mac=True, mac_only=True -> Needs Name, MAC
+    # Manual Step 2: show_mac=False, mac_only=False -> Needs Type, ID
+
+    # Only exclude Name if we're in Step 2 of manual flow
+    # (which we identify by show_mac=False, mac_only=False,
+    # and it having the defaults for Type/ID but NO Name default passed in step 2)
+    has_name_default = CONF_NAME in defaults
+    if has_name_default:
+        schema_dict[
+            vol.Optional(CONF_NAME, default=defaults.get(CONF_NAME, DEFAULT_BLE_NAME))
+        ] = cv.string
 
     if show_mac:
         schema_dict[
@@ -402,18 +465,19 @@ def _get_ble_schema(
             )
         ] = cv.string
 
-    schema_dict[
-        vol.Required(
-            CONF_DEVICE_TYPE,
-            default=defaults.get(CONF_DEVICE_TYPE, "controller"),
-        )
-    ] = vol.In(DEVICE_TYPES)
+    if not mac_only:
+        schema_dict[
+            vol.Required(
+                CONF_DEVICE_TYPE,
+                default=defaults.get(CONF_DEVICE_TYPE, "controller"),
+            )
+        ] = vol.In(DEVICE_TYPES)
 
-    schema_dict[
-        vol.Optional(
-            CONF_DEVICE_ID,
-            default=defaults.get(CONF_DEVICE_ID, DEFAULT_DEVICE_ID),
-        )
-    ] = cv.positive_int
+        schema_dict[
+            vol.Optional(
+                CONF_DEVICE_ID,
+                default=defaults.get(CONF_DEVICE_ID, DEFAULT_DEVICE_ID),
+            )
+        ] = cv.positive_int
 
     return vol.Schema(schema_dict)
