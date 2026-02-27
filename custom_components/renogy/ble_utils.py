@@ -161,6 +161,30 @@ def parse_temperature(raw_value: int, offset: int = 0) -> float:
     return raw_value - offset
 
 
+MODBUS_ERROR_CODES: dict[int, str] = {
+    1: "Illegal Function",
+    2: "Illegal Data Address",
+    3: "Illegal Data Value",
+    4: "Slave Device Failure",
+}
+
+
+def check_modbus_error(data: bytes) -> int | None:
+    """Check if a Modbus response is an error frame.
+
+    Modbus error responses have the high bit set on the function code byte.
+
+    Args:
+        data: Response data.
+
+    Returns:
+        The error code if it's an error response, None otherwise.
+    """
+    if len(data) >= 3 and data[1] & 0x80:
+        return data[2]
+    return None
+
+
 def validate_modbus_response(
     data: bytes, expected_device_id: int | None = None
 ) -> bool:

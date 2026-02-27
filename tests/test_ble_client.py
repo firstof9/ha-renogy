@@ -833,3 +833,92 @@ async def test_poll_all_no_data_warning():
     # Verify mark_failed was called
     key = "AA:BB:CC:DD:EE:FF_controller_255"
     assert manager._device_data[key].consecutive_failures > 0
+
+
+async def test_poll_device_modbus_error_all_registers(caplog):
+    """Test poll_device when all registers return Modbus error responses."""
+    mock_hass = MagicMock()
+    config = DeviceConfig("BT-TH-TEST", "AA:BB:CC:DD:EE:FF", "battery")
+    conn = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [config])
+
+    # Modbus error response: device_id=0xFF, func=0x83 (error), error_code=2
+    modbus_error = bytes([0xFF, 0x83, 0x02, 0xA1, 0x01])
+
+    with (
+        patch(
+            "custom_components.renogy.ble_client.get_registers_for_device",
+            return_value=[
+                {"name": "cell_info", "register": 5000, "words": 17},
+                {"name": "temp_info", "register": 5017, "words": 17},
+                {"name": "battery_info", "register": 5042, "words": 8},
+            ],
+        ),
+        patch.object(conn, "read_registers", return_value=modbus_error),
+    ):
+        with caplog.at_level(logging.WARNING):
+            data = await conn.poll_device(config)
+
+            # Should return empty dict — no valid data parsed
+            assert data == {}
+
+            # Should log Modbus error for each register
+            assert "Modbus error for cell_info" in caplog.text
+            assert "Modbus error for temp_info" in caplog.text
+            assert "Modbus error for battery_info" in caplog.text
+            assert "Illegal Data Address" in caplog.text
+
+            # Should log the actionable summary error
+            assert "All 3 register groups returned Modbus errors" in caplog.text
+            assert "device_type" in caplog.text
+
+
+async def test_poll_device_modbus_error_partial(caplog):
+    """Test poll_device when only some registers return Modbus errors."""
+    mock_hass = MagicMock()
+    config = DeviceConfig("dev1", "AA:BB:CC:DD:EE:FF", "controller")
+    conn = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [config])
+
+    # Modbus error response
+    modbus_error = bytes([0xFF, 0x83, 0x02, 0xA1, 0x01])
+    # Valid response (just dummy bytes — we mock validation)
+    valid_response = b"\x01\x03\x02\x00\x00\x00\x00"
+
+    call_count = 0
+
+    async def mock_read(device_id, register, word_count):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            return modbus_error  # First register fails
+        return valid_response  # Others succeed
+
+    with (
+        patch(
+            "custom_components.renogy.ble_client.get_registers_for_device",
+            return_value=[
+                {"name": "reg_a", "register": 100, "words": 1},
+                {"name": "reg_b", "register": 200, "words": 1},
+            ],
+        ),
+        patch.object(conn, "read_registers", side_effect=mock_read),
+        patch(
+            "custom_components.renogy.ble_client.validate_modbus_response",
+            return_value=True,
+        ),
+        patch(
+            "custom_components.renogy.ble_client.parse_response",
+            return_value={"some_val": 42},
+        ),
+    ):
+        with caplog.at_level(logging.WARNING):
+            data = await conn.poll_device(config)
+
+            # Should have parsed data from the successful register
+            assert data.get("some_val") == 42
+            assert data.get("__device") == "dev1"
+
+            # Should log Modbus error for first register only
+            assert "Modbus error for reg_a" in caplog.text
+
+            # Should NOT log "All register groups" since only 1 of 2 failed
+            assert "All 2 register groups returned Modbus errors" not in caplog.text

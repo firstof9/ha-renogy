@@ -24,7 +24,12 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
 from .ble_parsers import DeviceType, get_registers_for_device, parse_response
-from .ble_utils import create_modbus_read_request, validate_modbus_response
+from .ble_utils import (
+    MODBUS_ERROR_CODES,
+    check_modbus_error,
+    create_modbus_read_request,
+    validate_modbus_response,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -405,6 +410,7 @@ class PersistentBLEConnection:
             return {}
 
         all_data: dict[str, Any] = {}
+        modbus_error_count = 0
 
         for reg_info in registers:
             _LOGGER.debug(
@@ -422,7 +428,21 @@ class PersistentBLEConnection:
             )
 
             if response:
-                if validate_modbus_response(response, config.device_id):
+                error_code = check_modbus_error(response)
+                if error_code is not None:
+                    error_name = MODBUS_ERROR_CODES.get(
+                        error_code, f"Unknown({error_code})"
+                    )
+                    _LOGGER.warning(
+                        "[%s] Modbus error for %s (reg=%s): %s (code %s)",
+                        config.name,
+                        reg_info["name"],
+                        reg_info["register"],
+                        error_name,
+                        error_code,
+                    )
+                    modbus_error_count += 1
+                elif validate_modbus_response(response, config.device_id):
                     parsed = parse_response(
                         device_type_enum, reg_info["register"], response
                     )
@@ -444,6 +464,16 @@ class PersistentBLEConnection:
                 _LOGGER.debug("[%s] No response for %s", config.name, reg_info["name"])
 
             await asyncio.sleep(REQUEST_DELAY)
+
+        if modbus_error_count == len(registers):
+            _LOGGER.error(
+                "[%s] All %s register groups returned Modbus errors. "
+                "Please verify the device_type setting ('%s') is correct "
+                "for this device.",
+                config.name,
+                len(registers),
+                config.device_type,
+            )
 
         if all_data:
             all_data["__device"] = config.name
