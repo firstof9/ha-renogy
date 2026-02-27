@@ -17,6 +17,7 @@ from renogyapi.exceptions import (
 )
 
 from .ble_detector import async_detect_device_type
+from .ble_utils import _obfuscate_mac
 from .const import (
     CONF_ACCESS_KEY,
     CONF_CONNECTION_TYPE,
@@ -97,7 +98,7 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         _LOGGER.debug(
             "Discovered Renogy BLE device: %s (%s)",
             discovery_info.name,
-            discovery_info.address,
+            _obfuscate_mac(discovery_info.address),
         )
 
         await self.async_set_unique_id(discovery_info.address)

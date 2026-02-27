@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 from .ble_parsers import DeviceType, get_registers_for_device, parse_response
 from .ble_utils import (
     MODBUS_ERROR_CODES,
+    _obfuscate_mac,
     check_modbus_error,
     create_modbus_read_request,
     validate_modbus_response,
@@ -42,15 +43,6 @@ CONNECTION_TIMEOUT = 30.0
 NOTIFICATION_TIMEOUT = 5.0
 REQUEST_DELAY = 0.5
 RECONNECT_DELAY = 10.0
-
-
-def _obfuscate_mac(mac: str) -> str:
-    """Obfuscate a MAC address for logging, showing only the last 4 chars."""
-    parts = mac.split(":")
-    if len(parts) == 6:
-        return f"**:**:**:**:{parts[4]}:{parts[5]}"
-    # Fallback: show last 5 chars
-    return f"***{mac[-5:]}" if len(mac) > 5 else "***"
 
 
 @dataclass

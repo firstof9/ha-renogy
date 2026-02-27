@@ -262,3 +262,12 @@ def format_mac_address(mac: str) -> str:
         raise ValueError(f"Invalid MAC address: {mac}")
 
     return ":".join(mac[i : i + 2] for i in range(0, 12, 2))
+
+
+def _obfuscate_mac(mac: str) -> str:
+    """Obfuscate a MAC address for logging, showing only the last 4 chars."""
+    parts = mac.split(":")
+    if len(parts) == 6:
+        return f"**:**:**:**:{parts[4]}:{parts[5]}"
+    # Fallback: show last 5 chars
+    return f"***{mac[-5:]}" if len(mac) > 5 else "***"

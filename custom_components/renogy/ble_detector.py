@@ -10,6 +10,7 @@ from homeassistant.core import HomeAssistant
 
 from .ble_client import NOTIFY_CHAR_UUID, WRITE_CHAR_UUID
 from .ble_utils import (
+    _obfuscate_mac,
     create_modbus_read_request,
     validate_modbus_response,
 )
@@ -32,7 +33,10 @@ async def async_detect_device_type(
     """
     ble_device = bluetooth.async_ble_device_from_address(hass, mac_address)
     if not ble_device:
-        _LOGGER.debug("[%s] Detection failed: device not found in scanner", mac_address)
+        _LOGGER.debug(
+            "[%s] Detection failed: device not found in scanner",
+            _obfuscate_mac(mac_address),
+        )
         return None, None
 
     client = BleakClient(ble_device)
@@ -48,10 +52,15 @@ async def async_detect_device_type(
 
     try:
         async with asyncio.timeout(DETECTION_TIMEOUT):
-            _LOGGER.debug("[%s] Connecting for detection...", mac_address)
+            _LOGGER.debug(
+                "[%s] Connecting for detection...", _obfuscate_mac(mac_address)
+            )
             connected = await client.connect()
             if not connected:
-                _LOGGER.debug("[%s] Detection failed: could not connect", mac_address)
+                _LOGGER.debug(
+                    "[%s] Detection failed: could not connect",
+                    _obfuscate_mac(mac_address),
+                )
                 return None, None
 
             # Find actual characteristic UUIDs in case they differ slightly
@@ -80,7 +89,9 @@ async def async_detect_device_type(
                 try:
                     await client.write_gatt_char(write_char, request, response=False)
                 except Exception as err:
-                    _LOGGER.debug("[%s] Write failed: %s", mac_address, err)
+                    _LOGGER.debug(
+                        "[%s] Write failed: %s", _obfuscate_mac(mac_address), err
+                    )
                     return None
 
                 expected_len = 3 + (words * 2) + 2
@@ -112,7 +123,9 @@ async def async_detect_device_type(
             # ---------------------------------------------------------
             # 1. Check for Controller / Inverter (Register 0x000C / 12)
             # ---------------------------------------------------------
-            _LOGGER.debug("[%s] Probing Controller (ID 255)...", mac_address)
+            _LOGGER.debug(
+                "[%s] Probing Controller (ID 255)...", _obfuscate_mac(mac_address)
+            )
             resp = await _read_register(255, 12, 8)
 
             if resp:
@@ -123,24 +136,34 @@ async def async_detect_device_type(
             # ---------------------------------------------------------
             # 2. Check for Battery (Register 5122)
             # ---------------------------------------------------------
-            _LOGGER.debug("[%s] Probing Battery (ID 247)...", mac_address)
+            _LOGGER.debug(
+                "[%s] Probing Battery (ID 247)...", _obfuscate_mac(mac_address)
+            )
             resp = await _read_register(247, 5122, 6)
 
             if resp and validate_modbus_response(resp, 247):
                 return "battery", 247
 
-            _LOGGER.debug("[%s] Probing Battery (ID 255)...", mac_address)
+            _LOGGER.debug(
+                "[%s] Probing Battery (ID 255)...", _obfuscate_mac(mac_address)
+            )
             resp = await _read_register(255, 5122, 6)
 
             if resp and validate_modbus_response(resp, 255):
                 return "battery", 255
 
     except TimeoutError:
-        _LOGGER.debug("[%s] Detection timed out", mac_address)
+        _LOGGER.debug("[%s] Detection timed out", _obfuscate_mac(mac_address))
     except BleakError as err:
-        _LOGGER.debug("[%s] BLE error during detection: %s", mac_address, err)
+        _LOGGER.debug(
+            "[%s] BLE error during detection: %s", _obfuscate_mac(mac_address), err
+        )
     except Exception as err:
-        _LOGGER.debug("[%s] Unexpected error during detection: %s", mac_address, err)
+        _LOGGER.debug(
+            "[%s] Unexpected error during detection: %s",
+            _obfuscate_mac(mac_address),
+            err,
+        )
     finally:
         # Cleanup
         if client.is_connected:
@@ -150,5 +173,7 @@ async def async_detect_device_type(
             except Exception:
                 pass
 
-    _LOGGER.debug("[%s] Detection exhausted without a match", mac_address)
+    _LOGGER.debug(
+        "[%s] Detection exhausted without a match", _obfuscate_mac(mac_address)
+    )
     return None, None
