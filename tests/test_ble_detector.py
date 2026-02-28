@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from bleak.backends.device import BLEDevice
+from bleak.exc import BleakError
 
 from custom_components.renogy.ble_client import NOTIFY_CHAR_UUID, WRITE_CHAR_UUID
 from custom_components.renogy.ble_detector import async_detect_device_type
@@ -186,6 +187,181 @@ async def test_detect_device_battery_no_response(hass, mock_ble_device, mock_cli
         assert device_id is None
 
 
+async def test_detect_device_battery_secondary_success(
+    hass, mock_ble_device, mock_client
+):
+    """Test successful detection of a battery at ID 255 after ID 247 fails."""
+    # 1. Controller probe (ID 255) returns nothing
+    # 2. Battery probe (ID 247) returns nothing
+    # 3. Battery probe (ID 255) returns valid data
+    batt_data = (
+        bytearray([0xFF, 0x03, 0x0C]) + b"LITHIUM BT  " + bytearray([0x00, 0x00])
+    )
+
+    call_count = 0
+
+    def mock_write(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        # Probes: 1=Controller(255), 2=Battery(247), 3=Battery(255)
+        if call_count == 3:
+            handler = mock_client.start_notify.call_args[0][1]
+            hass.loop.call_soon(handler, None, batt_data)
+
+    mock_client.write_gatt_char.side_effect = mock_write
+
+    with (
+        patch(
+            "custom_components.renogy.ble_detector.bluetooth.async_ble_device_from_address",
+            return_value=mock_ble_device,
+        ),
+        patch(
+            "custom_components.renogy.ble_detector.BleakClient",
+            return_value=mock_client,
+        ),
+        patch("custom_components.renogy.ble_detector.RESPONSE_TIMEOUT", 0.01),
+        patch(
+            "custom_components.renogy.ble_detector.validate_modbus_response",
+            return_value=True,
+        ),
+    ):
+        device_type, device_id = await async_detect_device_type(
+            hass, "AA:BB:CC:DD:EE:FF"
+        )
+        assert device_type == "battery"
+        assert device_id == 255
+
+
+async def test_detect_device_bleak_error(hass, mock_ble_device, mock_client):
+    """Test detection when BleakError occurs."""
+    mock_client.connect.side_effect = BleakError("BLE failed")
+
+    with (
+        patch(
+            "custom_components.renogy.ble_detector.bluetooth.async_ble_device_from_address",
+            return_value=mock_ble_device,
+        ),
+        patch(
+            "custom_components.renogy.ble_detector.BleakClient",
+            return_value=mock_client,
+        ),
+    ):
+        device_type, device_id = await async_detect_device_type(
+            hass, "AA:BB:CC:DD:EE:FF"
+        )
+        assert device_type is None
+        assert device_id is None
+
+
+async def test_detect_device_unexpected_error(hass, mock_ble_device, mock_client):
+    """Test detection when an unexpected error occurs."""
+    mock_client.connect.side_effect = ValueError("Boom")
+
+    with (
+        patch(
+            "custom_components.renogy.ble_detector.bluetooth.async_ble_device_from_address",
+            return_value=mock_ble_device,
+        ),
+        patch(
+            "custom_components.renogy.ble_detector.BleakClient",
+            return_value=mock_client,
+        ),
+    ):
+        device_type, device_id = await async_detect_device_type(
+            hass, "AA:BB:CC:DD:EE:FF"
+        )
+        assert device_type is None
+        assert device_id is None
+
+
+async def test_read_register_write_error(hass, mock_ble_device, mock_client):
+    """Test detection when write_gatt_char fails in _read_register."""
+    mock_client.write_gatt_char.side_effect = Exception("Write error")
+
+    with (
+        patch(
+            "custom_components.renogy.ble_detector.bluetooth.async_ble_device_from_address",
+            return_value=mock_ble_device,
+        ),
+        patch(
+            "custom_components.renogy.ble_detector.BleakClient",
+            return_value=mock_client,
+        ),
+    ):
+        device_type, device_id = await async_detect_device_type(
+            hass, "AA:BB:CC:DD:EE:FF"
+        )
+        assert device_type is None
+        assert device_id is None
+
+
+async def test_detect_device_exhausted(hass, mock_ble_device, mock_client):
+    """Test detection when all probes are exhausted without match."""
+
+    # All writes succeed but returns invalid data
+    def mock_write(*args, **kwargs):
+        handler = mock_client.start_notify.call_args[0][1]
+        hass.loop.call_soon(handler, None, b"invalid")
+
+    mock_client.write_gatt_char.side_effect = mock_write
+
+    with (
+        patch(
+            "custom_components.renogy.ble_detector.bluetooth.async_ble_device_from_address",
+            return_value=mock_ble_device,
+        ),
+        patch(
+            "custom_components.renogy.ble_detector.BleakClient",
+            return_value=mock_client,
+        ),
+        patch(
+            "custom_components.renogy.ble_detector.validate_modbus_response",
+            return_value=False,
+        ),
+    ):
+        device_type, device_id = await async_detect_device_type(
+            hass, "AA:BB:CC:DD:EE:FF"
+        )
+        assert device_type is None
+        assert device_id is None
+
+
+async def test_detect_device_cleanup_error(hass, mock_ble_device, mock_client):
+    """Test detection cleanup error handling."""
+    mock_client.stop_notify.side_effect = Exception("Cleanup failed")
+
+    # Succeed on first probe to trigger cleanup
+    resp_data = (
+        bytearray([0xFF, 0x03, 0x10]) + b"ROVER           " + bytearray([0x00, 0x00])
+    )
+
+    def mock_write(*args, **kwargs):
+        handler = mock_client.start_notify.call_args[0][1]
+        hass.loop.call_soon(handler, None, resp_data)
+
+    mock_client.write_gatt_char.side_effect = mock_write
+
+    with (
+        patch(
+            "custom_components.renogy.ble_detector.bluetooth.async_ble_device_from_address",
+            return_value=mock_ble_device,
+        ),
+        patch(
+            "custom_components.renogy.ble_detector.BleakClient",
+            return_value=mock_client,
+        ),
+        patch(
+            "custom_components.renogy.ble_detector.validate_modbus_response",
+            return_value=True,
+        ),
+    ):
+        device_type, device_id = await async_detect_device_type(
+            hass, "AA:BB:CC:DD:EE:FF"
+        )
+        assert device_type == "controller"
+        assert device_id == 255
+
+
 async def test_detect_device_timeout(hass, mock_ble_device, mock_client):
     """Test detection module timeout."""
 
@@ -211,3 +387,34 @@ async def test_detect_device_timeout(hass, mock_ble_device, mock_client):
         )
         assert device_type is None
         assert device_id is None
+
+
+async def test_read_register_wait_time_zero(hass, mock_ble_device, mock_client):
+    """Test _read_register when wait_time becomes zero/negative."""
+    with (
+        patch(
+            "custom_components.renogy.ble_detector.bluetooth.async_ble_device_from_address",
+            return_value=mock_ble_device,
+        ),
+        patch(
+            "custom_components.renogy.ble_detector.BleakClient",
+            return_value=mock_client,
+        ),
+        patch("custom_components.renogy.ble_detector.RESPONSE_TIMEOUT", 0.01),
+    ):
+        # We'll mock the time to jump forward after it's first called in _read_register
+        original_time_func = asyncio.get_running_loop().time
+        t = original_time_func()
+        times = [t, t, t + 10.0]
+
+        with patch(
+            "custom_components.renogy.ble_detector.asyncio.get_running_loop"
+        ) as mock_loop_getter:
+            mock_loop = MagicMock()
+            mock_loop.time.side_effect = times
+            mock_loop_getter.return_value = mock_loop
+
+            device_type, device_id = await async_detect_device_type(
+                hass, "AA:BB:CC:DD:EE:FF"
+            )
+            assert device_type is None
