@@ -673,7 +673,23 @@ async def test_form_ble(hass):
     assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == "ble"
 
-    # Step 2: Enter BLE config
+    # Step 2: Enter BLE config (MAC and Name)
+    with patch(
+        "custom_components.renogy.config_flow.async_detect_device_type",
+        return_value=("controller", 255),
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                "name": "My Solar Controller",
+                "mac_address": "AA:BB:CC:DD:EE:FF",
+            },
+        )
+
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "ble_step2"
+
+    # Step 3: Enter BLE config (Type and ID)
     with patch(
         "custom_components.renogy.async_setup_entry",
         return_value=True,
@@ -681,8 +697,6 @@ async def test_form_ble(hass):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {
-                "name": "My Solar Controller",
-                "mac_address": "AA:BB:CC:DD:EE:FF",
                 "device_type": "controller",
                 "device_id": 255,
             },
@@ -716,11 +730,15 @@ async def test_form_bluetooth_discovery(hass):
     discovery_info.service_uuids = []
     discovery_info.source = "local"
 
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN,
-        context={"source": config_entries.SOURCE_BLUETOOTH},
-        data=discovery_info,
-    )
+    with patch(
+        "custom_components.renogy.config_flow.async_detect_device_type",
+        return_value=("controller", 255),
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_BLUETOOTH},
+            data=discovery_info,
+        )
 
     assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == "bluetooth_confirm"
@@ -809,8 +827,6 @@ async def test_form_ble_invalid_mac(hass):
         {
             "name": "My Solar Controller",
             "mac_address": "INVALID",
-            "device_type": "controller",
-            "device_id": 255,
         },
     )
 
@@ -848,8 +864,6 @@ async def test_form_ble_duplicate_mac(hass):
         {
             "name": "New Device",
             "mac_address": "AA:BB:CC:DD:EE:FF",
-            "device_type": "controller",
-            "device_id": 255,
         },
     )
 
@@ -915,8 +929,6 @@ async def test_ble_invalid_hex_mac(hass):
         {
             CONF_NAME: "BLE Device",
             CONF_MAC_ADDRESS: "AA:BB:CC:DD:EE:ZZ",
-            CONF_DEVICE_TYPE: "controller",
-            CONF_DEVICE_ID: 255,
         },
     )
 

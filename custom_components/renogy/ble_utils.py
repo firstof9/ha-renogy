@@ -161,6 +161,30 @@ def parse_temperature(raw_value: int, offset: int = 0) -> float:
     return raw_value - offset
 
 
+MODBUS_ERROR_CODES: dict[int, str] = {
+    1: "Illegal Function",
+    2: "Illegal Data Address",
+    3: "Illegal Data Value",
+    4: "Slave Device Failure",
+}
+
+
+def check_modbus_error(data: bytes) -> int | None:
+    """Check if a Modbus response is an error frame.
+
+    Modbus error responses have the high bit set on the function code byte.
+
+    Args:
+        data: Response data.
+
+    Returns:
+        The error code if it's an error response, None otherwise.
+    """
+    if len(data) >= 3 and data[1] & 0x80:
+        return data[2]
+    return None
+
+
 def validate_modbus_response(
     data: bytes, expected_device_id: int | None = None
 ) -> bool:
@@ -238,3 +262,12 @@ def format_mac_address(mac: str) -> str:
         raise ValueError(f"Invalid MAC address: {mac}")
 
     return ":".join(mac[i : i + 2] for i in range(0, 12, 2))
+
+
+def _obfuscate_mac(mac: str) -> str:
+    """Obfuscate a MAC address for logging, showing only the last 4 chars."""
+    parts = mac.split(":")
+    if len(parts) == 6:
+        return f"**:**:**:**:{parts[4]}:{parts[5]}"
+    # Fallback: show last 5 chars
+    return f"***{mac[-5:]}" if len(mac) > 5 else "***"

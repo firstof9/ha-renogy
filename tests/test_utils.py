@@ -3,8 +3,10 @@
 import pytest
 
 from custom_components.renogy.ble_utils import (
+    MODBUS_ERROR_CODES,
     bytes_to_ascii,
     bytes_to_int,
+    check_modbus_error,
     create_modbus_read_request,
     format_mac_address,
     modbus_crc16,
@@ -150,3 +152,30 @@ def test_validate_modbus_response_coverage():
     # Length should be 3 (head) + 4 (data) + 2 (crc) = 9
     data = b"\x01\x03\x04\x00\x00"  # Length 5
     assert validate_modbus_response(data) is False
+
+
+def test_check_modbus_error():
+    """Test check_modbus_error helper."""
+    # Normal response (no error bit) -> None
+    normal = bytes([0x01, 0x03, 0x02, 0x12, 0x34])
+    assert check_modbus_error(normal) is None
+
+    # Error response: function 0x83 (0x03 | 0x80), error code 2
+    error = bytes([0xFF, 0x83, 0x02, 0xA1, 0x01])
+    assert check_modbus_error(error) == 2
+
+    # Error response: error code 1 (Illegal Function)
+    error_1 = bytes([0x01, 0x81, 0x01])
+    assert check_modbus_error(error_1) == 1
+
+    # Too short -> None
+    assert check_modbus_error(b"\x01\x83") is None
+    assert check_modbus_error(b"") is None
+
+
+def test_modbus_error_codes():
+    """Test MODBUS_ERROR_CODES contains expected entries."""
+    assert MODBUS_ERROR_CODES[1] == "Illegal Function"
+    assert MODBUS_ERROR_CODES[2] == "Illegal Data Address"
+    assert MODBUS_ERROR_CODES[3] == "Illegal Data Value"
+    assert MODBUS_ERROR_CODES[4] == "Slave Device Failure"
