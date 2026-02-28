@@ -414,7 +414,7 @@ async def test_read_register_wait_time_zero(hass, mock_ble_device, mock_client):
             mock_loop.time.side_effect = times
             mock_loop_getter.return_value = mock_loop
 
-            device_type, device_id = await async_detect_device_type(
+            device_type, _device_id = await async_detect_device_type(
                 hass, "AA:BB:CC:DD:EE:FF"
             )
             assert device_type is None
