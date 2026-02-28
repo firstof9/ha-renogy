@@ -405,16 +405,25 @@ async def test_read_register_wait_time_zero(hass, mock_ble_device, mock_client):
         # We'll mock the time to jump forward after it's first called in _read_register
         original_time_func = asyncio.get_running_loop().time
         t = original_time_func()
-        times = [t, t, t + 10.0]
+
+        call_count = 0
+
+        def mock_time():
+            nonlocal call_count
+            call_count += 1
+            if call_count <= 2:
+                return t
+            return t + 10.0
 
         with patch(
             "custom_components.renogy.ble_detector.asyncio.get_running_loop"
         ) as mock_loop_getter:
             mock_loop = MagicMock()
-            mock_loop.time.side_effect = times
+            mock_loop.time.side_effect = mock_time
             mock_loop_getter.return_value = mock_loop
 
             device_type, _device_id = await async_detect_device_type(
                 hass, "AA:BB:CC:DD:EE:FF"
             )
             assert device_type is None
+            assert _device_id is None

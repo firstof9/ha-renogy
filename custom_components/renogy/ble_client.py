@@ -421,7 +421,11 @@ class PersistentBLEConnection:
 
             if response:
                 error_code = check_modbus_error(response)
-                if error_code is not None:
+                if (
+                    error_code is not None
+                    and len(response) > 0
+                    and response[0] == config.device_id
+                ):
                     error_name = MODBUS_ERROR_CODES.get(
                         error_code, f"Unknown({error_code})"
                     )
