@@ -193,8 +193,13 @@ class PersistentBLEConnection:
                     if self.client:
                         try:
                             await self.client.disconnect()
-                        except Exception:  # pylint: disable=broad-except
-                            pass
+                        except Exception as exc:  # pylint: disable=broad-except
+                            _LOGGER.debug(
+                                "[%s] Failed to disconnect BLE "
+                                "client during cleanup: %s",
+                                _obfuscate_mac(self.mac_address),
+                                exc,
+                            )
                         self.client = None
                     _LOGGER.warning(
                         "[%s] Connection failed", _obfuscate_mac(self.mac_address)

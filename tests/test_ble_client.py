@@ -397,6 +397,7 @@ async def test_connection_client_disconnect_exception():
         patch(
             "custom_components.renogy.ble_client.establish_connection"
         ) as mock_client_cls,
+        patch("custom_components.renogy.ble_client._LOGGER") as mock_logger,
         patch("asyncio.sleep", new_callable=AsyncMock),
     ):
         mock_device = MagicMock(spec=BLEDevice)
@@ -411,6 +412,10 @@ async def test_connection_client_disconnect_exception():
         result = await conn.connect()
         assert result is False
         assert mock_client_cls.call_count == 3
+        assert mock_logger.debug.call_count > 0
+
+        # Reset for second part
+        mock_logger.debug.reset_mock()
 
         # Let's override establish_connection to succeed, but start_notify fails
         mock_client.is_connected = True
@@ -418,6 +423,7 @@ async def test_connection_client_disconnect_exception():
         result = await conn.connect()
         assert result is False
         assert mock_client.disconnect.call_count > 0
+        assert mock_logger.debug.call_count > 0
 
 
 async def test_setup_characteristics_discovery():
