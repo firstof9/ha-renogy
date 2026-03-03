@@ -190,6 +190,12 @@ class PersistentBLEConnection:
                 )
 
                 if self.client is None or not self.client.is_connected:
+                    if self.client:
+                        try:
+                            await self.client.disconnect()
+                        except Exception:  # pylint: disable=broad-except
+                            pass
+                        self.client = None
                     _LOGGER.warning(
                         "[%s] Connection failed", _obfuscate_mac(self.mac_address)
                     )
