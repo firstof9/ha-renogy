@@ -365,6 +365,61 @@ async def test_connection_bleak_error():
         assert mock_client.connect.call_count == 3
 
 
+async def test_connection_generic_exception():
+    """Test handling of generic Exception during connect."""
+    mock_hass = MagicMock()
+    conn = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [])
+
+    with (
+        patch("custom_components.renogy.ble_client.bluetooth") as mock_bt,
+        patch(
+            "custom_components.renogy.ble_client.establish_connection"
+        ) as mock_client_cls,
+        patch("asyncio.sleep", new_callable=AsyncMock),
+    ):
+        mock_device = MagicMock(spec=BLEDevice)
+        mock_bt.async_ble_device_from_address.return_value = mock_device
+
+        mock_client_cls.side_effect = Exception("Generic connection failure")
+
+        result = await conn.connect()
+        assert result is False
+        assert mock_client_cls.call_count == 3
+
+
+async def test_connection_client_disconnect_exception():
+    """Test handling of Exception when trying to disconnect a failed client during retry."""
+    mock_hass = MagicMock()
+    conn = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [])
+
+    with (
+        patch("custom_components.renogy.ble_client.bluetooth") as mock_bt,
+        patch(
+            "custom_components.renogy.ble_client.establish_connection"
+        ) as mock_client_cls,
+        patch("asyncio.sleep", new_callable=AsyncMock),
+    ):
+        mock_device = MagicMock(spec=BLEDevice)
+        mock_bt.async_ble_device_from_address.return_value = mock_device
+
+        mock_client = MagicMock()
+        mock_client.is_connected = False
+        mock_client.disconnect = AsyncMock(side_effect=Exception("Disconnect boom"))
+        mock_client_cls.return_value = mock_client
+
+        # Client disconnect should be caught and ignored, loop proceeds
+        result = await conn.connect()
+        assert result is False
+        assert mock_client_cls.call_count == 3
+
+        # Let's override establish_connection to succeed, but start_notify fails
+        mock_client.is_connected = True
+        mock_client.start_notify = AsyncMock(side_effect=BleakError("Notify failed"))
+        result = await conn.connect()
+        assert result is False
+        assert mock_client.disconnect.call_count > 0
+
+
 async def test_setup_characteristics_discovery():
     """Test characteristic discovery."""
     mock_hass = MagicMock()
@@ -618,21 +673,8 @@ async def test_read_registers_client_none_before_write():
     conn = PersistentBLEConnection(mock_hass, "AA:BB:CC:DD:EE:FF", [])
     conn._ensure_async_primitives()
     conn._connected = True
-
-    # Client is None
     conn.client = None
-
-    # We need to bypass the initial check 'if not self.is_connected'
-    # PersistentBLEConnection.is_connected checks self.client is not None
-    # So strictly speaking, read_registers will try to reconnect if client is None.
-    # We need to simulate: is_connected passes (Mock client), but then inside try block client is None.
-    # But is_connected property checks self.client.
-
-    # Let's mock is_connected property?
     with patch.object(PersistentBLEConnection, "is_connected", return_value=True):
-        # Now it enters the block
-        # But ensure we hit the line `if self.client is None: raise RuntimeError`
-        # We need self.client to be None here.
         conn.client = None
 
         data = await conn.read_registers(1, 0, 1)
