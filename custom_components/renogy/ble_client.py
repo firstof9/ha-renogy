@@ -179,8 +179,11 @@ class PersistentBLEConnection:
                     name=self.mac_address,
                     disconnected_callback=self._on_disconnect,
                     max_attempts=1,
-                    ble_device_callback=lambda: bluetooth.async_ble_device_from_address(
-                        self.hass, self.mac_address
+                    ble_device_callback=lambda d=device: (
+                        bluetooth.async_ble_device_from_address(
+                            self.hass, self.mac_address
+                        )
+                        or d
                     ),
                     use_services_cache=True,
                     timeout=CONNECTION_TIMEOUT,
