@@ -381,8 +381,8 @@ async def test_setup_characteristics_discovery():
     conn.client.services = [service]
 
     await conn._setup_characteristics()
-    assert conn._write_char == WRITE_UUID
-    assert conn._notify_char == NOTIFY_UUID
+    assert conn._write_char == char_w
+    assert conn._notify_char == char_n
 
     # Case 2: Not found, use defaults
     service.characteristics = []

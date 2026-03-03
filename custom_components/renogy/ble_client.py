@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.exc import BleakError
+from bleak_retry_connector import establish_connection
 from homeassistant.components import bluetooth
 
 if TYPE_CHECKING:
@@ -110,8 +111,8 @@ class PersistentBLEConnection:
         self.device_configs = device_configs
         self.client: BleakClient | None = None
         self._connected = False
-        self._notify_char: str | None = None
-        self._write_char: str | None = None
+        self._notify_char: BleakGATTCharacteristic | str | None = None
+        self._write_char: BleakGATTCharacteristic | str | None = None
         self._notification_data = bytearray()
         self._notification_event: asyncio.Event | None = None
         self._lock: asyncio.Lock | None = None
@@ -172,14 +173,23 @@ class PersistentBLEConnection:
                     bluetooth.async_rediscover_address(self.hass, self.mac_address)
                     continue
 
-                self.client = BleakClient(
-                    device,
-                    timeout=CONNECTION_TIMEOUT,
+                self.client = await establish_connection(
+                    client_class=BleakClient,
+                    device=device,
+                    name=self.mac_address,
                     disconnected_callback=self._on_disconnect,
+                    max_attempts=1,
+                    ble_device_callback=lambda: (
+                        bluetooth.async_ble_device_from_address(
+                            self.hass, self.mac_address
+                        )
+                        or self.mac_address
+                    ),
+                    use_services_cache=True,
+                    timeout=CONNECTION_TIMEOUT,
                 )
-                await self.client.connect()
 
-                if not self.client.is_connected:
+                if self.client is None or not self.client.is_connected:
                     _LOGGER.warning(
                         "[%s] Connection failed", _obfuscate_mac(self.mac_address)
                     )
@@ -242,19 +252,23 @@ class PersistentBLEConnection:
         )
         for service in self.client.services:
             for char in service.characteristics:
-                if char.uuid.lower() == WRITE_CHAR_UUID:
-                    self._write_char = char.uuid
+                if char.uuid.lower() == WRITE_CHAR_UUID and self._write_char is None:
+                    self._write_char = char
                     _LOGGER.debug(
-                        "[%s] Found write char: %s",
+                        "[%s] Found write char: %s (handle: %s)",
                         _obfuscate_mac(self.mac_address),
                         char.uuid,
+                        char.handle,
                     )
-                elif char.uuid.lower() == NOTIFY_CHAR_UUID:
-                    self._notify_char = char.uuid
+                elif (
+                    char.uuid.lower() == NOTIFY_CHAR_UUID and self._notify_char is None
+                ):
+                    self._notify_char = char
                     _LOGGER.debug(
-                        "[%s] Found notify char: %s",
+                        "[%s] Found notify char: %s (handle: %s)",
                         _obfuscate_mac(self.mac_address),
                         char.uuid,
+                        char.handle,
                     )
 
         if not self._notify_char:
