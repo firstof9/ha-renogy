@@ -31,7 +31,8 @@ BATTERY_TYPE = {
     1: "Flooded",
     2: "Gel",
     3: "AGM",
-    4: "Lithium",
+    4: "Lithium-ion",
+    5: "Lithium Iron Phosphate",
 }
 FILTER_UNITS = ["℃", "KWh", "AH"]
 CONNECTION_TYPE = {

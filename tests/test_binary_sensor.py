@@ -28,7 +28,7 @@ async def test_binary_sensors(hass, mock_api, caplog):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-        assert len(hass.states.async_entity_ids(BINARY_SENSOR_DOMAIN)) == 5
+        assert len(hass.states.async_entity_ids(BINARY_SENSOR_DOMAIN)) == 6
         entries = hass.config_entries.async_entries(DOMAIN)
         assert len(entries) == 1
 

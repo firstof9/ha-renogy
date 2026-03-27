@@ -46,6 +46,18 @@
                 "onlineStatus": "online",
                 "connectType": "rs485",
                 "addTime": 1733944293000
+            },
+            {
+                "deviceId": "12345678904",
+                "sn": "",
+                "sku": "LI-ION-BATTERY",
+                "name": "Li-ion Battery",
+                "category": "Battery",
+                "mac": "50",
+                "firmware": "",
+                "onlineStatus": "online",
+                "connectType": "rs485",
+                "addTime": 1733944300000
             }
         ]
     }
