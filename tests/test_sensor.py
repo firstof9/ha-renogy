@@ -29,9 +29,9 @@ async def test_sensors(hass, mock_api, caplog):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-        assert len(hass.states.async_entity_ids(BINARY_SENSOR_DOMAIN)) == 5
+        assert len(hass.states.async_entity_ids(BINARY_SENSOR_DOMAIN)) == 6
         sensor_ids = hass.states.async_entity_ids(SENSOR_DOMAIN)
-        assert len(sensor_ids) == 42
+        assert len(sensor_ids) == 44
         assert "sensor.inverter_uei_ampers" in sensor_ids
         assert "sensor.inverter_load_output_priority" in sensor_ids
         entries = hass.config_entries.async_entries(DOMAIN)
@@ -62,6 +62,9 @@ async def test_sensors(hass, mock_api, caplog):
         assert state
         assert state.state == "54.784637"
         assert state.attributes["unit_of_measurement"] == "%"
+        state = hass.states.get("sensor.li_ion_battery_battery_type")
+        assert state
+        assert state.state == "Lithium-ion"
 
 
 async def test_sensors_error(hass, mock_api_error, caplog):
@@ -77,9 +80,9 @@ async def test_sensors_error(hass, mock_api_error, caplog):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-        assert len(hass.states.async_entity_ids(BINARY_SENSOR_DOMAIN)) == 5
+        assert len(hass.states.async_entity_ids(BINARY_SENSOR_DOMAIN)) == 6
         sensor_ids = hass.states.async_entity_ids(SENSOR_DOMAIN)
-        assert len(sensor_ids) == 42
+        assert len(sensor_ids) == 44
         assert "sensor.inverter_uei_ampers" in sensor_ids
         assert "sensor.inverter_load_output_priority" in sensor_ids
         entries = hass.config_entries.async_entries(DOMAIN)

@@ -100,6 +100,20 @@ DIAG_RESULTS = {
             "heatingModeStatus": (0, ""),
         },
     },
+    "12345678904": {
+        "deviceId": "12345678904",
+        "parent": "1234567890",
+        "name": "Li-ion Battery",
+        "mac": "50",
+        "firmware": "",
+        "status": "online",
+        "connection": "RS485",
+        "serial": "",
+        "model": "LI-ION-BATTERY",
+        "data": {
+            "batteryType": (4, ""),
+        },
+    },
 }
 
 DUPE_SERIAL = {
