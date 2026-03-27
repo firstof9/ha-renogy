@@ -365,6 +365,21 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         device_class=SensorDeviceClass.VOLTAGE,
         suggested_display_precision=0,
     ),
+    "ueiAmps": SensorEntityDescription(
+        key="ueiAmps",
+        name="UEI Ampers",
+        icon="mdi:sine-wave",
+        native_unit_of_measurement=UnitOfElectricCurrent.MILLIAMPERE,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.CURRENT,
+        suggested_display_precision=1,
+    ),
+    "loadWattsMode": SensorEntityDescription(
+        key="loadWattsMode",
+        name="Load Output Priority",
+        icon="mdi:priority-high",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
     "chargePriority": SensorEntityDescription(
         key="chargePriority",
         name="Charge Priority",
