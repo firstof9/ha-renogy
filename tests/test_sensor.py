@@ -30,7 +30,7 @@ async def test_sensors(hass, mock_api, caplog):
         await hass.async_block_till_done()
 
         assert len(hass.states.async_entity_ids(BINARY_SENSOR_DOMAIN)) == 5
-        assert len(hass.states.async_entity_ids(SENSOR_DOMAIN)) == 40
+        assert len(hass.states.async_entity_ids(SENSOR_DOMAIN)) == 42
         entries = hass.config_entries.async_entries(DOMAIN)
         assert len(entries) == 1
 
@@ -75,7 +75,7 @@ async def test_sensors_error(hass, mock_api_error, caplog):
         await hass.async_block_till_done()
 
         assert len(hass.states.async_entity_ids(BINARY_SENSOR_DOMAIN)) == 5
-        assert len(hass.states.async_entity_ids(SENSOR_DOMAIN)) == 40
+        assert len(hass.states.async_entity_ids(SENSOR_DOMAIN)) == 42
         entries = hass.config_entries.async_entries(DOMAIN)
         assert len(entries) == 1
 

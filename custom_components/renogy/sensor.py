@@ -21,6 +21,11 @@ OUTPUT_MODES = {
     1: "Normal",
     2: "Eco",
 }
+LOAD_OUTPUT_MODES = {
+    0: "PV Priority",
+    1: "Utility Priority",
+    2: "Inverter (Battery) Priority",
+}
 BATTERY_TYPE = {
     0: "User Defined",
     1: "Flooded",
@@ -123,6 +128,8 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
         raw = val[0]
         if self._type == "output":
             value = OUTPUT_MODES.get(raw)
+        elif self._type == "loadWattsMode":
+            value = LOAD_OUTPUT_MODES.get(raw, f"Unknown ({raw})")
         elif self._type == "batteryType" and isinstance(raw, int):
             value = BATTERY_TYPE.get(raw)
         else:
