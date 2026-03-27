@@ -75,7 +75,7 @@ DIAG_RESULTS = {
             "systemVolts": (12, ""),
             "loadVolts": (0.0, ""),
             "gridChargeAmps": (0.0, "mA"),
-            "batteryType": (4, ""),
+            "batteryType": (5, ""),
             "status": (None, ""),
         },
     },
