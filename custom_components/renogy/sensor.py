@@ -129,7 +129,7 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
         if self._type == "output":
             value = OUTPUT_MODES.get(raw)
         elif self._type == "loadWattsMode":
-            value = LOAD_OUTPUT_MODES.get(raw, f"Unknown ({raw})")
+            value = LOAD_OUTPUT_MODES.get(raw, raw)
         elif self._type == "batteryType" and isinstance(raw, int):
             value = BATTERY_TYPE.get(raw)
         else:

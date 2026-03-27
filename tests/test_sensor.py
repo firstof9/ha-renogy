@@ -30,7 +30,10 @@ async def test_sensors(hass, mock_api, caplog):
         await hass.async_block_till_done()
 
         assert len(hass.states.async_entity_ids(BINARY_SENSOR_DOMAIN)) == 5
-        assert len(hass.states.async_entity_ids(SENSOR_DOMAIN)) == 42
+        sensor_ids = hass.states.async_entity_ids(SENSOR_DOMAIN)
+        assert len(sensor_ids) == 42
+        assert "sensor.inverter_uei_ampers" in sensor_ids
+        assert "sensor.inverter_load_output_priority" in sensor_ids
         entries = hass.config_entries.async_entries(DOMAIN)
         assert len(entries) == 1
 
@@ -75,7 +78,10 @@ async def test_sensors_error(hass, mock_api_error, caplog):
         await hass.async_block_till_done()
 
         assert len(hass.states.async_entity_ids(BINARY_SENSOR_DOMAIN)) == 5
-        assert len(hass.states.async_entity_ids(SENSOR_DOMAIN)) == 42
+        sensor_ids = hass.states.async_entity_ids(SENSOR_DOMAIN)
+        assert len(sensor_ids) == 42
+        assert "sensor.inverter_uei_ampers" in sensor_ids
+        assert "sensor.inverter_load_output_priority" in sensor_ids
         entries = hass.config_entries.async_entries(DOMAIN)
         assert len(entries) == 1
 
