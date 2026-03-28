@@ -1,0 +1,81 @@
+name: Issue title validator
+
+on:
+  issues:
+    types:
+      - opened
+      - edited
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Validate title
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { title, number } = context.payload.issue;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const defaultTitles = ["[Bug]:", "[Feature Request]:"];
+            const isMatch = defaultTitles.includes(title.trim());
+            const commentMarker = "👋 Thanks for opening this issue! It looks like you've left the default title.";
+
+            if (isMatch) {
+              // Check if we've already commented to avoid duplicates
+              const { data: comments } = await github.rest.issues.listComments({
+                owner,
+                repo,
+                issue_number: number
+              });
+
+              if (!comments.some(c => c.body.startsWith(commentMarker))) {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: number,
+                  body: commentMarker + " Please update it to be more descriptive so we can help you better. This helps the maintainers triage issues more quickly."
+                });
+              }
+
+              try {
+                await github.rest.issues.addLabels({
+                  owner,
+                  repo,
+                  issue_number: number,
+                  labels: ["invalid"]
+                });
+              } catch (e) {
+                console.log("Could not add label: " + e.message);
+              }
+            } else {
+              // Title is corrected, clean up previous warnings
+              const { data: comments } = await github.rest.issues.listComments({
+                owner,
+                repo,
+                issue_number: number
+              });
+
+              const botComment = comments.find(c => c.body.startsWith(commentMarker));
+              if (botComment) {
+                await github.rest.issues.deleteComment({
+                  owner,
+                  repo,
+                  comment_id: botComment.id
+                });
+              }
+
+              try {
+                await github.rest.issues.removeLabel({
+                  owner,
+                  repo,
+                  issue_number: number,
+                  name: "invalid"
+                });
+              } catch (e) {
+                console.log("Could not remove label (it might not be there): " + e.message);
+              }
+            }
