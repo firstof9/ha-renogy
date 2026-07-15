@@ -2,7 +2,6 @@
 pytest-homeassistant-custom-component
 mypy
 tox
-aioresponses
 pytest
 aiohttp_cors
 pycares>=4.11.0,<6.0.0  # Pin <5.0.0 for aiodns compatibility, >=4.11.0 for py3.13

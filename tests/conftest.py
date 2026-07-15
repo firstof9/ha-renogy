@@ -3,13 +3,24 @@
 from unittest.mock import patch
 
 import pytest
-from aioresponses import aioresponses
 
 from .common import load_fixture
 from .const import DUPE_SERIAL
 
 BASE_URL = "https://openapi.renogy.com"
 DEVICE_LIST = "/device/list"
+
+
+class AIOMockerWrapper:
+    """Wrapper to translate aioresponses style calls to aioclient_mock."""
+
+    def __init__(self, mocker):
+        """Initialize."""
+        self._mocker = mocker
+
+    def get(self, url, status=200, body="", **kwargs):
+        """Mock GET request."""
+        self._mocker.get(url, status=status, text=body)
 
 
 # This fixture enables loading custom integrations in all tests.
@@ -34,10 +45,9 @@ def skip_notifications_fixture():
 
 
 @pytest.fixture
-def mock_aioclient():
+def mock_aioclient(aioclient_mock):
     """Fixture to mock aioclient calls."""
-    with aioresponses() as m:
-        yield m
+    return AIOMockerWrapper(aioclient_mock)
 
 
 @pytest.fixture(name="mock_api")
