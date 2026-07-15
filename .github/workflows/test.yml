@@ -9,9 +9,34 @@ on:
 permissions: read-all
 
 jobs:
+  prek:
+    runs-on: ubuntu-latest
+    name: Prek checks
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: 📥 Checkout the repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: 🛠️ Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: 📦 Install prek
+        run: pip install prek==0.4.0
+
+      - name: 🎨 Run prek
+        run: prek run --all-files --show-diff-on-failure
+
   validate:
     runs-on: "ubuntu-latest"
     name: Validate
+    needs: prek
     steps:
         - name: Harden Runner
           uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
@@ -30,30 +55,10 @@ jobs:
         - name: Hassfest validation
           uses: home-assistant/actions/hassfest@f4ca6f671bd429efb108c0f2fa0ae8af0215986c # master
 
-  style:
-    runs-on: "ubuntu-latest"
-    name: Check style formatting
-    steps:
-        - name: Harden Runner
-          uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
-          with:
-            egress-policy: audit
-
-        - name: 📥 Checkout the repository
-          uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        - name: 🛠️ Set up Python
-          uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-          with:
-            python-version: "3.x"
-        - name: 🏃 Run ruff
-          run: |
-            pip install ruff
-            ruff check .
-            ruff format --check .
-
   tests:
     runs-on: "ubuntu-latest"
     name: Run tests
+    needs: [validate, prek]
     strategy:
       matrix:
         python-version:
@@ -69,14 +74,17 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 2
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
       - name: 🛠️ Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: 📦 Install requirements
-         # We will keep these simple for PR 1, modernizing with uv in PR 2
         run: |
-          pip install tox tox-gh-actions
+          uv pip install --system tox tox-gh-actions tox-uv
       - name: 🏃 Test with tox
         run: tox
       - name: 📤 Upload coverage to Codecov
