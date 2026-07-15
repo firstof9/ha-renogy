@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from renogyapi import Renogy as api
 from renogyapi.exceptions import (
     NoDevices,
@@ -175,6 +176,7 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             renogy = api(
                 secret_key=user_input[CONF_SECRET_KEY],
                 access_key=user_input[CONF_ACCESS_KEY],
+                session=async_get_clientsession(self.hass),
             )
             try:
                 await renogy.get_devices()
@@ -319,6 +321,7 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             renogy = api(
                 secret_key=user_input[CONF_SECRET_KEY],
                 access_key=user_input[CONF_ACCESS_KEY],
+                session=async_get_clientsession(self.hass),
             )
             try:
                 await renogy.get_devices()
