@@ -12,9 +12,16 @@ jobs:
   release_zip_file:
     name: Prepare release asset
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Get Version
         id: get_version
@@ -42,13 +49,13 @@ jobs:
 
       - name: 📤 Upload zip to release
         if: ${{ github.event_name == 'release' }}
-        uses: softprops/action-gh-release@v0.1.15
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
         with:
           files: ${{ github.workspace }}/custom_components/renogy/renogy.zip
 
       - name: 📤 Upload zip to release
         if: ${{ github.event_name == 'workflow_dispatch' }}
-        uses: softprops/action-gh-release@v0.1.15
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
         with:
           files: ${{ github.workspace }}/custom_components/renogy/renogy.zip
           tag_name: ${{inputs.tags}}
