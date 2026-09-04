@@ -604,8 +604,9 @@ async def test_cloud_rate_limit_with_existing_data(hass, caplog):
 
     with caplog.at_level(logging.WARNING):
         await coordinator.update_sensors()
-        assert "Rate limit exceeded while communicating with Renogy API" in caplog.text
+        assert "Rate limit exceeded communicating with Renogy API" in caplog.text
         assert coordinator._data == {"dev1": {"data": 123}}
+        assert coordinator._retry_after == 60
 
 
 async def test_cloud_rate_limit_without_existing_data(hass):
@@ -628,5 +629,7 @@ async def test_cloud_rate_limit_without_existing_data(hass):
     coordinator = RenogyUpdateCoordinator(hass, 30, entry, manager)
     coordinator._data = {}
 
-    with pytest.raises(UpdateFailed):
+    with pytest.raises(UpdateFailed) as exc_info:
         await coordinator.update_sensors()
+    assert exc_info.value.retry_after == 60
+    assert coordinator._retry_after == 60

@@ -280,10 +280,16 @@ class RenogyUpdateCoordinator(DataUpdateCoordinator):
             pass
         except RateLimit as error:
             _LOGGER.warning(
-                "Rate limit exceeded while communicating with Renogy API: %s", error
+                "Rate limit exceeded communicating with Renogy API: %s. Backing off.",
+                error,
+            )
+            self._retry_after = (
+                max(60, int(self.update_interval.total_seconds()) * 2)
+                if self.update_interval
+                else 60
             )
             if not self._data:
-                raise UpdateFailed(error) from error
+                raise UpdateFailed(error, retry_after=self._retry_after) from error
         except Exception as error:
             _LOGGER.debug(
                 "Error updating sensors [%s]: %s", type(error).__name__, error
