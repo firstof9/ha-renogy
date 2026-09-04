@@ -161,7 +161,7 @@ async def _async_setup_ble_entry(
 
     ble_manager = BLEDeviceManager(hass, [device_config])
 
-    interval = 30
+    interval = config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
     coordinator = BLEUpdateCoordinator(hass, interval, config_entry, ble_manager)
 
     # Store in hass.data immediately so async_unload_entry can clean up
@@ -196,6 +196,9 @@ async def _async_setup_ble_entry(
     )
 
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
+
+    config_entry.async_on_unload(config_entry.add_update_listener(async_reload_entry))
+
     return True
 
 
