@@ -62,5 +62,16 @@
       "discovery_device_missing": "Discovery information is no longer available. Please try again.",
       "reconfigure_entry_missing": "Configuration entry not found. Please try again."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "scan_interval": "Update Interval (seconds)"
+        },
+        "description": "Configure the polling interval for Renogy devices.",
+        "title": "Renogy Options"
+      }
+    }
   }
 }

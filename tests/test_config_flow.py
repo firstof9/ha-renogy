@@ -1060,3 +1060,27 @@ async def test_reconfigure_cloud_url_not_found(hass):
 
     assert result["type"] == FlowResultType.FORM
     assert result["errors"][CONF_NAME] == "api_error"
+
+
+async def test_options_flow(hass):
+    """Test options flow to update scan interval."""
+    from homeassistant.const import CONF_SCAN_INTERVAL
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data=CONFIG_DATA,
+        options={},
+    )
+    entry.add_to_hass(hass)
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "init"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={CONF_SCAN_INTERVAL: 120},
+    )
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    assert result["data"] == {CONF_SCAN_INTERVAL: 120}
+    assert entry.options == {CONF_SCAN_INTERVAL: 120}

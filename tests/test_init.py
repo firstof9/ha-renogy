@@ -633,3 +633,33 @@ async def test_cloud_rate_limit_without_existing_data(hass):
         await coordinator.update_sensors()
     assert exc_info.value.retry_after == 60
     assert coordinator._retry_after == 60
+
+
+async def test_cloud_setup_with_custom_scan_interval_and_reload(hass, mock_api):
+    """Test cloud entry setup uses custom scan_interval and reloads on change."""
+    from datetime import timedelta
+
+    from homeassistant.const import CONF_SCAN_INTERVAL
+
+    from custom_components.renogy.const import COORDINATOR
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title=DEVICE_NAME,
+        data=CONFIG_DATA,
+        options={CONF_SCAN_INTERVAL: 120},
+    )
+    entry.add_to_hass(hass)
+
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    coordinator = hass.data[DOMAIN][entry.entry_id][COORDINATOR]
+    assert coordinator.update_interval == timedelta(seconds=120)
+
+    # Updating options triggers update listeners -> async_reload_entry -> async_reload
+    hass.config_entries.async_update_entry(entry, options={CONF_SCAN_INTERVAL: 90})
+    await hass.async_block_till_done()
+
+    coordinator_reloaded = hass.data[DOMAIN][entry.entry_id][COORDINATOR]
+    assert coordinator_reloaded.update_interval == timedelta(seconds=90)

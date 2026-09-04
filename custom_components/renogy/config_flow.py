@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.const import CONF_SCAN_INTERVAL
+from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from renogyapi import Renogy as api
@@ -32,7 +34,9 @@ from .const import (
     DEFAULT_BLE_NAME,
     DEFAULT_DEVICE_ID,
     DEFAULT_NAME,
+    DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    MIN_SCAN_INTERVAL,
 )
 
 if TYPE_CHECKING:
@@ -48,6 +52,14 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
     DEFAULTS = {CONF_NAME: DEFAULT_NAME}
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> RenogyOptionsFlowHandler:
+        """Get the options flow for this handler."""
+        return RenogyOptionsFlowHandler(config_entry)
 
     def __init__(self):
         """Set up the instance."""
@@ -485,3 +497,28 @@ def _get_ble_schema(
         ] = cv.positive_int
 
     return vol.Schema(schema_dict)
+
+
+class RenogyOptionsFlowHandler(config_entries.OptionsFlowWithConfigEntry):
+    """Handle Renogy options."""
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        """Manage the Renogy options."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        current_interval = self.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        CONF_SCAN_INTERVAL,
+                        default=current_interval,
+                    ): vol.All(vol.Coerce(int), vol.Clamp(min=MIN_SCAN_INTERVAL)),
+                }
+            ),
+        )

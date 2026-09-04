@@ -30,6 +30,8 @@ CONF_SECRET_KEY = "secret_key"
 CONF_ACCESS_KEY = "access_key"
 CONF_NAME = "name"
 DEFAULT_NAME = "Renogy Core"
+DEFAULT_SCAN_INTERVAL = 60
+MIN_SCAN_INTERVAL = 30
 
 # BLE config
 CONF_CONNECTION_TYPE = "connection_type"
