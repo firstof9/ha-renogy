@@ -580,3 +580,53 @@ async def test_ble_coordinator_logic_success_existing_data(hass):
 
     data = await coordinator._async_update_data()
     assert data == {"some": "data"}
+
+
+async def test_cloud_rate_limit_with_existing_data(hass, caplog):
+    """Test cloud coordinator handles RateLimit by keeping existing data."""
+    from renogyapi.exceptions import RateLimit
+
+    entry = MockConfigEntry(
+        data={
+            CONF_CONNECTION_TYPE: "cloud",
+            CONF_NAME: "Cloud",
+            CONF_SECRET_KEY: "s",
+            CONF_ACCESS_KEY: "a",
+        }
+    )
+    entry.add_to_hass(hass)
+
+    manager = MagicMock()
+    manager.get_devices = AsyncMock(side_effect=RateLimit("API rate limit exceeded"))
+
+    coordinator = RenogyUpdateCoordinator(hass, 30, entry, manager)
+    coordinator._data = {"dev1": {"data": 123}}
+
+    with caplog.at_level(logging.WARNING):
+        await coordinator.update_sensors()
+        assert "Rate limit exceeded while communicating with Renogy API" in caplog.text
+        assert coordinator._data == {"dev1": {"data": 123}}
+
+
+async def test_cloud_rate_limit_without_existing_data(hass):
+    """Test cloud coordinator raises UpdateFailed on RateLimit if no data exists."""
+    from renogyapi.exceptions import RateLimit
+
+    entry = MockConfigEntry(
+        data={
+            CONF_CONNECTION_TYPE: "cloud",
+            CONF_NAME: "Cloud",
+            CONF_SECRET_KEY: "s",
+            CONF_ACCESS_KEY: "a",
+        }
+    )
+    entry.add_to_hass(hass)
+
+    manager = MagicMock()
+    manager.get_devices = AsyncMock(side_effect=RateLimit("API rate limit exceeded"))
+
+    coordinator = RenogyUpdateCoordinator(hass, 30, entry, manager)
+    coordinator._data = {}
+
+    with pytest.raises(UpdateFailed):
+        await coordinator.update_sensors()
