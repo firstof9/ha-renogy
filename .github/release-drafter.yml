@@ -71,21 +71,18 @@ categories:
         - "repo"
         - "dependencies"
         - "github_actions"
-        - "refactor"
         - "style"
         - "build"
         - "revert"
         - "translations"
+        - "CI"
     collapse-after: 1
 
   - title: "🎓 Code Quality 🎓"
     when:
       labels:
         - "code-quality"
-        - "CI"
-        - "test"
-        - "has-tests"
-
+        - "refactor"
 autolabeler:
   - label: "breaking-change"
     title:
