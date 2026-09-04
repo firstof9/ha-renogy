@@ -13,6 +13,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from renogyapi import Renogy as api
+from renogyapi.exceptions import RateLimit
 
 from .const import (
     BLE_TO_HA_KEY_MAP,
@@ -277,6 +278,18 @@ class RenogyUpdateCoordinator(DataUpdateCoordinator):
             self._data = await self._manager.get_devices()
         except RuntimeError:
             pass
+        except RateLimit as error:
+            _LOGGER.warning(
+                "Rate limit exceeded communicating with Renogy API: %s. Backing off.",
+                error,
+            )
+            self._retry_after = (
+                max(60, int(self.update_interval.total_seconds()) * 2)
+                if self.update_interval
+                else 60
+            )
+            if not self._data:
+                raise UpdateFailed(error, retry_after=self._retry_after) from error
         except Exception as error:
             _LOGGER.debug(
                 "Error updating sensors [%s]: %s", type(error).__name__, error
