@@ -633,3 +633,83 @@ async def test_cloud_rate_limit_without_existing_data(hass):
         await coordinator.update_sensors()
     assert exc_info.value.retry_after == 60
     assert coordinator._retry_after == 60
+
+
+async def test_cloud_setup_with_custom_scan_interval_and_reload(hass, mock_api):
+    """Test cloud entry setup uses custom scan_interval and reloads on change."""
+    from datetime import timedelta
+
+    from homeassistant.const import CONF_SCAN_INTERVAL
+
+    from custom_components.renogy.const import COORDINATOR
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title=DEVICE_NAME,
+        data=CONFIG_DATA,
+        options={CONF_SCAN_INTERVAL: 120},
+    )
+    entry.add_to_hass(hass)
+
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    coordinator = hass.data[DOMAIN][entry.entry_id][COORDINATOR]
+    assert coordinator.update_interval == timedelta(seconds=120)
+
+    # Updating options triggers update listeners -> async_reload_entry -> async_reload
+    hass.config_entries.async_update_entry(entry, options={CONF_SCAN_INTERVAL: 90})
+    await hass.async_block_till_done()
+
+    coordinator_reloaded = hass.data[DOMAIN][entry.entry_id][COORDINATOR]
+    assert coordinator_reloaded.update_interval == timedelta(seconds=90)
+
+
+async def test_ble_setup_with_custom_scan_interval_and_reload(hass):
+    """Test BLE entry setup uses custom scan_interval and reloads on change."""
+    from datetime import timedelta
+
+    from homeassistant.const import CONF_SCAN_INTERVAL
+
+    from custom_components.renogy.const import COORDINATOR
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="AA:BB:CC:DD:EE:FF",
+        data={
+            CONF_CONNECTION_TYPE: "ble",
+            CONF_NAME: "BLE Device",
+            CONF_MAC_ADDRESS: "AA:BB:CC:DD:EE:FF",
+        },
+        options={CONF_SCAN_INTERVAL: 120},
+    )
+    entry.add_to_hass(hass)
+
+    with patch(
+        "custom_components.renogy.ble_client.BLEDeviceManager"
+    ) as mock_manager_cls:
+        mock_manager = mock_manager_cls.return_value
+        mock_manager.poll_all = AsyncMock(
+            return_value={
+                "ble_AA:BB:CC:DD:EE:FF": {
+                    "__device": "Test Device",
+                    "__device_type": "controller",
+                    "__mac_address": "AA:BB:CC:DD:EE:FF",
+                    "battery_voltage": 12.0,
+                }
+            }
+        )
+        mock_manager.disconnect_all = AsyncMock()
+
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        coordinator = hass.data[DOMAIN][entry.entry_id][COORDINATOR]
+        assert coordinator.update_interval == timedelta(seconds=120)
+
+        # Updating options triggers update listeners -> async_reload_entry -> async_reload
+        hass.config_entries.async_update_entry(entry, options={CONF_SCAN_INTERVAL: 90})
+        await hass.async_block_till_done()
+
+        coordinator_reloaded = hass.data[DOMAIN][entry.entry_id][COORDINATOR]
+        assert coordinator_reloaded.update_interval == timedelta(seconds=90)

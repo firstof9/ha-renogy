@@ -7,6 +7,7 @@ import logging
 from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr
@@ -27,6 +28,7 @@ from .const import (
     CONNECTION_TYPE_BLE,
     COORDINATOR,
     DEFAULT_DEVICE_ID,
+    DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     ISSUE_URL,
     MANAGER,
@@ -70,7 +72,7 @@ async def _async_setup_cloud_entry(
 ) -> bool:
     """Set up cloud API integration."""
     manager = RenogyManager(hass, config_entry).api
-    interval = 30
+    interval = config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
     coordinator = RenogyUpdateCoordinator(hass, interval, config_entry, manager)
 
     await coordinator.async_refresh()
@@ -86,6 +88,9 @@ async def _async_setup_cloud_entry(
     _register_cloud_devices(hass, config_entry, coordinator)
 
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
+
+    config_entry.async_on_unload(config_entry.add_update_listener(async_reload_entry))
+
     return True
 
 
@@ -156,7 +161,7 @@ async def _async_setup_ble_entry(
 
     ble_manager = BLEDeviceManager(hass, [device_config])
 
-    interval = 30
+    interval = config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
     coordinator = BLEUpdateCoordinator(hass, interval, config_entry, ble_manager)
 
     # Store in hass.data immediately so async_unload_entry can clean up
@@ -191,6 +196,9 @@ async def _async_setup_ble_entry(
     )
 
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
+
+    config_entry.async_on_unload(config_entry.add_update_listener(async_reload_entry))
+
     return True
 
 
@@ -238,6 +246,11 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
         hass.data[DOMAIN].pop(config_entry.entry_id, None)
 
     return unload_ok
+
+
+async def async_reload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
+    """Reload config entry."""
+    await hass.config_entries.async_reload(config_entry.entry_id)
 
 
 # ==========================================================================
