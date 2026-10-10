@@ -1,4 +1,4 @@
-# Contribution guidelines
+# Contributing to ha-renogy
 
 Contributing to this project should be as easy and transparent as possible, whether it's:
 
@@ -7,45 +7,74 @@ Contributing to this project should be as easy and transparent as possible, whet
 - Submitting a fix
 - Proposing new features
 
-## Github is used for everything
+> **AI coding agents**: Please also read [AGENTS.md](AGENTS.md), which covers architecture, Modbus register mappings, and repository-specific patterns in detail.
 
-Github is used to host code, to track issues and feature requests, as well as accept pull requests.
+## Getting started
 
-Pull requests are the best way to propose changes to the codebase.
+We recommend using [`uv`](https://docs.astral.sh/uv/) to manage your local environment and dependencies:
 
-1. Fork the repo and create your branch.
-2. If you've changed something, update the documentation.
-3. Make sure your code lints (using black).
-4. Test you contribution.
-5. Issue that pull request!
+```bash
+git clone https://github.com/firstof9/ha-renogy
+cd ha-renogy
 
-## Any contributions you make will be under the Apache License 2.0 Software License
+# Create and activate Python 3.14 virtual environment
+uv venv --python 3.14
+source .venv/bin/activate
 
-In short, when you submit code changes, your submissions are understood to be under the same [Apache License 2.0 License](https://choosealicense.com/licenses/apache-2.0/) that covers the project. Feel free to contact the maintainers if that's a concern.
+# Install test and development requirements
+uv pip install -r requirements_test.txt
 
-## Report bugs using Github's [issues](../../issues)
+# Install pre-commit hooks
+pre-commit install
+```
 
-GitHub issues are used to track public bugs.
-Report a bug by [opening a new issue](../../issues/new/choose); it's that easy!
+## Running tests
 
-## Write bug reports with detail, background, and sample code
+```bash
+# Run tests directly with pytest
+pytest
 
-**Great Bug Reports** tend to have:
+# Or run with uv in an ephemeral environment
+uv run --with-requirements requirements_test.txt pytest
 
-- A quick summary and/or background
+# Run a single test file
+pytest tests/test_validator.py -v
+
+# Run full test matrix with tox
+uv tool run --with tox-uv --with tox-gh-actions tox
+```
+
+## Linting & formatting
+
+Code formatting and linting are handled by `ruff` and `codespell` via `pre-commit` / `prek`:
+
+```bash
+pre-commit run --all-files
+# or using uv + prek
+uv run prek run --all-files
+```
+
+## Pull requests
+
+1. Fork the repo and create your branch (`git checkout -b fix/short-description`).
+2. Keep pull requests focused and atomic.
+3. Ensure all tests and linting checks pass locally before opening a pull request.
+4. **Translations**: If adding or altering user-facing configuration strings, update `custom_components/renogy/strings.json` and mirror changes into `custom_components/renogy/translations/en.json`.
+5. **BLE Parsers & Registers**: If updating Modbus register blocks or parsing in `ble_parsers.py`, add corresponding fixtures and tests in `tests/test_parsers.py`.
+6. **Validation Limits**: If adding numerical sensors to `ble_validator.py`, ensure ranges accommodate all supported hardware configurations without rejecting valid data.
+7. Reference related issues in your PR description (e.g. `Fixes #125`).
+
+## Reporting bugs
+
+Report bugs by [opening a new issue](../../issues/new/choose).
+
+**Great bug reports** include:
+- A clear description of the issue
 - Steps to reproduce
-  - Be specific!
-  - Give sample code if you can.
-- What you expected would happen
-- What actually happens
-- Notes (possibly including why you think this might be happening, or stuff you tried that didn't work)
-
-People *love* thorough bug reports. I'm not even kidding.
-
-## Use a Consistent Coding Style
-
-Use [black](https://github.com/ambv/black) to make sure the code follows the style.
+- What version of Home Assistant and `ha-renogy` you are running
+- Hardware model (e.g., Rover 40, Rover 60, Smart Lithium Battery) and connection type (Renogy Hub / Cloud API, BT-1, BT-2)
+- Relevant Home Assistant logs showing errors or data rejection warnings
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under its Apache License 2.0.
+By contributing, you agree that your contributions will be licensed under the [Apache License 2.0](LICENSE).

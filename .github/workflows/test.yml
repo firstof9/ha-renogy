@@ -8,6 +8,9 @@ on:
 
 permissions: read-all
 
+env:
+  UV_PRERELEASE: allow
+
 jobs:
   prek:
     runs-on: ubuntu-latest
@@ -21,14 +24,16 @@ jobs:
       - name: 📥 Checkout the repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: 🛠️ Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      - name: 🛠️ Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
-          python-version: "3.13"
-          cache: "pip"
+          enable-cache: true
+
+      - name: 🛠️ Set up Python
+        run: uv python install 3.14
 
       - name: 📦 Install prek
-        run: pip install prek==0.4.0
+        run: uv tool install prek==0.4.0
 
       - name: 🎨 Run prek
         run: prek run --all-files --show-diff-on-failure
@@ -74,17 +79,16 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 2
-      - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - name: 🛠️ Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           enable-cache: true
-      - name: 🛠️ Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: 📦 Install requirements
+          cache-dependency-glob: "requirements*.txt"
+      - name: 🛠️ Set up Python
+        run: uv python install ${{ matrix.python-version }}
+      - name: 📦 Install tox
         run: |
-          uv pip install --system tox tox-gh-actions tox-uv
+          uv tool install tox --with tox-uv --with tox-gh-actions --prerelease=allow
       - name: 🏃 Test with tox
         run: tox
       - name: 📤 Upload coverage to Codecov
