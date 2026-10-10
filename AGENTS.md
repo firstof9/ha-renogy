@@ -27,7 +27,7 @@ custom_components/renogy/
 
 ## Environment & toolchain
 
-- **Python**: Target is Python 3.14 (`target-version = "py313"` in `pyproject.toml`, test matrix runs on Python 3.14).
+- **Python**: Target is Python 3.14 (`target-version = "py314"` in `pyproject.toml`, test matrix runs on Python 3.14).
 - **Package & tool management**: Managed using [`uv`](https://docs.astral.sh/uv/) and [`tox`](https://tox.wiki/) with `tox-uv`.
 - **Linting & formatting**: `ruff` and `codespell` via `pre-commit` / `prek`.
 - **Tests**: `pytest` + `pytest-homeassistant-custom-component`.
