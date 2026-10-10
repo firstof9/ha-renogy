@@ -33,7 +33,7 @@ jobs:
         run: uv python install 3.13
 
       - name: 📦 Install prek
-        run: uv pip install --system prek==0.4.0
+        run: uv tool install prek==0.4.0
 
       - name: 🎨 Run prek
         run: prek run --all-files --show-diff-on-failure
