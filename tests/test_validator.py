@@ -15,16 +15,19 @@ async def test_get_controller_validation_limits():
     """Test limit scaling for system voltage."""
     limits_12v = get_controller_validation_limits(12)
     assert limits_12v["battery_voltage"] == (0, 20, 5)
+    assert limits_12v["pv_voltage"] == (0, 160, 50)
 
     limits_24v = get_controller_validation_limits(24)
     # Scaled by 2
     assert limits_24v["battery_voltage"] == (0, 40, 10)
     # Non-scaled key
     assert limits_24v["battery_current"] == (-100, 100, 50)
+    assert limits_24v["pv_voltage"] == (0, 160, 50)
 
     limits_48v = get_controller_validation_limits(48)
     # Scaled by 4
     assert limits_48v["battery_voltage"] == (0, 80, 20)
+    assert limits_48v["pv_voltage"] == (0, 160, 50)
 
 
 async def test_data_validator_init():

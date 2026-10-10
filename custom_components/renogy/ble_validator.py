@@ -26,7 +26,7 @@ _CONTROLLER_BASE_LIMITS: dict[str, tuple[float, float, float]] = {
     "charging_amp_hours_today": (0, 10000, 200),
     "discharging_amp_hours_today": (0, 10000, 200),
     # PV (solar panel) sensors
-    "pv_voltage": (0, 30, 10),
+    "pv_voltage": (0, 160, 50),
     "pv_current": (0, 100, 50),
     "pv_power": (0, 5000, 2000),
     "max_charging_power_today": (0, 5000, 5000),
@@ -43,7 +43,7 @@ _CONTROLLER_BASE_LIMITS: dict[str, tuple[float, float, float]] = {
 }
 
 # Keys whose max and max_change scale with system voltage
-_VOLTAGE_SCALED_KEYS = {"battery_voltage", "pv_voltage", "load_voltage"}
+_VOLTAGE_SCALED_KEYS = {"battery_voltage", "load_voltage"}
 
 
 def get_controller_validation_limits(
@@ -51,7 +51,7 @@ def get_controller_validation_limits(
 ) -> dict[str, tuple[float, float, float]]:
     """Return controller validation limits scaled for the given system voltage.
 
-    Voltage-dependent keys (battery_voltage, pv_voltage, load_voltage) have
+    Voltage-dependent keys (battery_voltage, load_voltage) have
     their max and max_change values multiplied by a factor derived from the
     system voltage (12V → 1×, 24V → 2×, 48V → 4×).
 
