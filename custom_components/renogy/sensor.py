@@ -12,7 +12,8 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import BLE_SENSOR_TYPES, COORDINATOR, DOMAIN, SENSOR_TYPES
+from . import RenogyConfigEntry
+from .const import BLE_SENSOR_TYPES, DOMAIN, SENSOR_TYPES
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -49,9 +50,9 @@ CONNECTION_TYPE = {
 }
 
 
-async def async_setup_entry(hass, entry, async_add_entities):
+async def async_setup_entry(hass, entry: RenogyConfigEntry, async_add_entities) -> None:
     """Set up the Renogy sensors."""
-    coordinator = hass.data[DOMAIN][entry.entry_id][COORDINATOR]
+    coordinator = entry.runtime_data.coordinator
     sensors = []
 
     all_sensor_types = {**SENSOR_TYPES, **BLE_SENSOR_TYPES}

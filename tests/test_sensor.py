@@ -127,7 +127,7 @@ async def test_sensor_coverage(hass, mock_api, caplog):
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
-    coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
+    coordinator = entry.runtime_data.coordinator
     device_id = "12345678903"
 
     # Find a sensor entity

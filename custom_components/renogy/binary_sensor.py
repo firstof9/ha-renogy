@@ -13,14 +13,15 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
 
-from .const import BINARY_SENSORS, COORDINATOR, DOMAIN
+from . import RenogyConfigEntry
+from .const import BINARY_SENSORS, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_entry(hass, entry, async_add_devices):
+async def async_setup_entry(hass, entry: RenogyConfigEntry, async_add_devices) -> None:
     """Set up binary_sensor platform."""
-    coordinator = hass.data[DOMAIN][entry.entry_id][COORDINATOR]
+    coordinator = entry.runtime_data.coordinator
 
     binary_sensors = []
     for device_id, device in coordinator.data.items():
