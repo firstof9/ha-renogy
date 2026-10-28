@@ -1,9 +1,14 @@
-"""Test the Mail and Packages diagnostics."""
+"""Test the Renogy diagnostics."""
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.renogy.const import CONF_ACCESS_KEY, CONF_SECRET_KEY, DOMAIN
+from custom_components.renogy.const import (
+    CONF_ACCESS_KEY,
+    CONF_MAC_ADDRESS,
+    CONF_SECRET_KEY,
+    DOMAIN,
+)
 from custom_components.renogy.diagnostics import (
     async_get_config_entry_diagnostics,
     async_get_device_diagnostics,
@@ -19,7 +24,7 @@ async def test_config_entry_diagnostics(hass):
     entry = MockConfigEntry(
         domain=DOMAIN,
         title=DEVICE_NAME,
-        data=CONFIG_DATA,
+        data={**CONFIG_DATA, CONF_MAC_ADDRESS: "AA:BB:CC:DD:EE:FF"},
     )
 
     entry.add_to_hass(hass)
@@ -28,6 +33,7 @@ async def test_config_entry_diagnostics(hass):
     assert isinstance(result, dict)
     assert result["config"]["data"][CONF_SECRET_KEY] == "**REDACTED**"
     assert result["config"]["data"][CONF_ACCESS_KEY] == "**REDACTED**"
+    assert result["config"]["data"][CONF_MAC_ADDRESS] == "**REDACTED**"
 
 
 @pytest.mark.asyncio
