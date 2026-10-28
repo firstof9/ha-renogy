@@ -9,8 +9,10 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorEntityDescription,
 )
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.helpers.update_coordinator import (
+    CoordinatorEntity,
+    DataUpdateCoordinator,
+)
 
 from . import RenogyConfigEntry
 from .const import BLE_SENSOR_TYPES, DOMAIN, SENSOR_TYPES
@@ -76,14 +78,14 @@ async def async_setup_entry(hass, entry: RenogyConfigEntry, async_add_entities) 
 
 
 class RenogySensor(CoordinatorEntity, SensorEntity):
-    """Implementation of an OpenEVSE sensor."""
+    """Implementation of a Renogy sensor."""
 
     def __init__(
         self,
         sensor_description: SensorEntityDescription,
         device_id: str,
-        coordinator: str,
-        config: ConfigEntry,
+        coordinator: DataUpdateCoordinator,
+        config: RenogyConfigEntry,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
@@ -93,12 +95,15 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
         self._name = sensor_description.name
         self._type = sensor_description.key
         self.unit = sensor_description.native_unit_of_measurement
-        self._data = coordinator.data
-        self.coordinator = coordinator
         self._state = None
 
         self._attr_icon = sensor_description.icon
-        device_name = coordinator.data[device_id].get("name", device_id)
+        device_data = (
+            coordinator.data.get(device_id, {})
+            if isinstance(coordinator.data, dict)
+            else {}
+        )
+        device_name = device_data.get("name", device_id)
         self._attr_name = f"{device_name} {self._name}"
         self._attr_unique_id = f"{self._name}_{device_id}"
 
@@ -177,4 +182,4 @@ class RenogySensor(CoordinatorEntity, SensorEntity):
     def update_icon(self) -> None:
         """Update connection type icon."""
         connection = self.coordinator.data[self._device_id][self._type]
-        self._attr_icon = CONNECTION_TYPE[connection]
+        self._attr_icon = CONNECTION_TYPE.get(connection, "mdi:help")

@@ -83,3 +83,8 @@ async def test_binary_sensor_unsupported(hass, mock_api, caplog):
 
         assert entity.is_on is False
         assert "binary_sensor [heatingModeStatus] not supported." in caplog.text
+
+        # Missing device_id in coordinator.data returns False gracefully
+        original_device = coordinator.data.pop(device_id)
+        assert entity.is_on is False
+        coordinator.data[device_id] = original_device

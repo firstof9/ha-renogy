@@ -397,6 +397,12 @@ async def test_async_remove_config_entry_device_integration(
             result = await async_remove_config_entry_device(hass, entry, device)
             assert result is True
 
+        # When coordinator data is None, get_device returns None -> returns True
+        entry.runtime_data.coordinator.data = None
+        for device in devices:
+            result = await async_remove_config_entry_device(hass, entry, device)
+            assert result is True
+
 
 pytestmark = pytest.mark.asyncio
 

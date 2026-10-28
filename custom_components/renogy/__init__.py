@@ -48,7 +48,7 @@ class RenogyRuntimeData:
 
     def get_device(self, device_id: str) -> dict[str, Any] | None:
         """Return device data from the coordinator if present."""
-        if not self.coordinator.data:
+        if not isinstance(self.coordinator.data, dict):
             return None
         return self.coordinator.data.get(device_id)
 
@@ -258,6 +258,7 @@ async def async_unload_entry(
             manager = config_entry.runtime_data.manager
             if hasattr(manager, "disconnect_all"):
                 await manager.disconnect_all()
+            config_entry.runtime_data = None  # type: ignore[assignment]
 
     return unload_ok
 

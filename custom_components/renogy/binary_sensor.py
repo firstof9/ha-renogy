@@ -7,7 +7,6 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
@@ -40,25 +39,30 @@ async def async_setup_entry(hass, entry: RenogyConfigEntry, async_add_devices) -
 
 
 class RenogyBinarySensor(CoordinatorEntity, BinarySensorEntity):
-    """Implementation of an OpenEVSE binary sensor."""
+    """Implementation of a Renogy binary sensor."""
 
     def __init__(
         self,
         sensor_description: BinarySensorEntityDescription,
         device_id: str,
         coordinator: DataUpdateCoordinator,
-        config: ConfigEntry,
+        config: RenogyConfigEntry,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
-        self.coordinator = coordinator
         self._config = config
         self.entity_description = sensor_description
         self._name = sensor_description.name
         self._type = sensor_description.key
         self._device_id = device_id
 
-        self._attr_name = f"{coordinator.data[device_id]['name']} {self._name}"
+        device_data = (
+            coordinator.data.get(device_id, {})
+            if isinstance(coordinator.data, dict)
+            else {}
+        )
+        device_name = device_data.get("name", device_id)
+        self._attr_name = f"{device_name} {self._name}"
         self._attr_unique_id = f"{self._name}_{device_id}"
 
     @property
@@ -73,12 +77,17 @@ class RenogyBinarySensor(CoordinatorEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool:
         """Return True if the service is on."""
+        if (
+            not isinstance(self.coordinator.data, dict)
+            or self._device_id not in self.coordinator.data
+        ):
+            return False
         data = self.coordinator.data[self._device_id]
         if self._type in data:
             if self._type == "status":
                 return data[self._type] == "online"
 
-        data = self.coordinator.data[self._device_id].get("data")
+        data = data.get("data")
         if data is None or self._type not in data:
             _LOGGER.info("binary_sensor [%s] not supported.", self._type)
             return False
