@@ -20,7 +20,7 @@ from renogyapi.exceptions import (
 )
 
 from .ble_detector import async_detect_device_type
-from .ble_utils import _obfuscate_mac
+from .ble_utils import _obfuscate_mac, format_mac_address
 from .const import (
     CONF_ACCESS_KEY,
     CONF_CONNECTION_TYPE,
@@ -153,9 +153,7 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         device_name = self._discovered_device.name or DEFAULT_BLE_NAME
 
         if not hasattr(self, "_detected_type"):
-            self._detected_type, self._detected_id = await async_detect_device_type(
-                self.hass, self._discovered_device.address
-            )
+            await self._async_ensure_detected_device(self._discovered_device.address)
 
         return self.async_show_form(
             step_id="bluetooth_confirm",
@@ -163,16 +161,72 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 defaults={
                     CONF_NAME: device_name,
                     CONF_MAC_ADDRESS: self._discovered_device.address,
-                    CONF_DEVICE_TYPE: getattr(self, "_detected_type", None)
-                    or "controller",
-                    CONF_DEVICE_ID: getattr(self, "_detected_id", None)
-                    or DEFAULT_DEVICE_ID,
+                    **self._get_detected_ble_defaults(),
                 },
                 show_mac=False,
             ),
             description_placeholders={"name": device_name},
             errors=self._errors,
         )
+
+    # ------------------------------------------------------------------
+    # Shared validation & detection helpers
+    # ------------------------------------------------------------------
+
+    async def _async_ensure_detected_device(self, mac_address: str) -> None:
+        """Probe BLE device type and ID if not already detected."""
+        if not hasattr(self, "_detected_type"):
+            self._detected_type, self._detected_id = await async_detect_device_type(
+                self.hass, mac_address
+            )
+
+    def _get_detected_ble_defaults(self) -> dict[str, Any]:
+        """Return default BLE device type and ID based on detection."""
+        return {
+            CONF_DEVICE_TYPE: getattr(self, "_detected_type", None) or "controller",
+            CONF_DEVICE_ID: getattr(self, "_detected_id", None) or DEFAULT_DEVICE_ID,
+        }
+
+    async def _async_validate_cloud_input(
+        self, user_input: dict[str, Any]
+    ) -> dict[str, str]:
+        """Validate Cloud API credentials and return any field errors."""
+        errors: dict[str, str] = {}
+        renogy = api(
+            secret_key=user_input[CONF_SECRET_KEY],
+            access_key=user_input[CONF_ACCESS_KEY],
+            session=async_get_clientsession(self.hass),
+        )
+        try:
+            await renogy.get_devices()
+        except NoDevices:
+            _LOGGER.exception("No devices found in API request.")
+            errors[CONF_ACCESS_KEY] = "no_devices"
+        except NotAuthorized:
+            _LOGGER.exception("Invalid key(s).")
+            errors[CONF_SECRET_KEY] = "invalid_key"
+            errors[CONF_ACCESS_KEY] = "invalid_key"
+        except RateLimit:
+            _LOGGER.exception("Rate limit exceeded.")
+            errors[CONF_NAME] = "rate_limit"
+        except UrlNotFound:
+            _LOGGER.exception("URL error communicating with Renogy.")
+            errors[CONF_NAME] = "api_error"
+        except Exception as ex:
+            _LOGGER.exception(
+                "Error contacting Renogy API: %s",
+                ex,
+            )
+            errors[CONF_NAME] = "general"
+        return errors
+
+    def _validate_and_format_mac(self, raw_mac: str) -> str | None:
+        """Validate and normalize a MAC address, setting self._errors on failure."""
+        try:
+            return format_mac_address(raw_mac.strip())
+        except ValueError:
+            self._errors[CONF_MAC_ADDRESS] = "invalid_mac"
+            return None
 
     # ------------------------------------------------------------------
     # Step 2a: Cloud API configuration
@@ -185,33 +239,7 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self._errors = {}
 
         if user_input is not None:
-            renogy = api(
-                secret_key=user_input[CONF_SECRET_KEY],
-                access_key=user_input[CONF_ACCESS_KEY],
-                session=async_get_clientsession(self.hass),
-            )
-            try:
-                await renogy.get_devices()
-            except NoDevices:
-                _LOGGER.exception("No devices found in API request.")
-                self._errors[CONF_ACCESS_KEY] = "no_devices"
-            except NotAuthorized:
-                _LOGGER.exception("Invalid key(s).")
-                self._errors[CONF_SECRET_KEY] = "invalid_key"
-                self._errors[CONF_ACCESS_KEY] = "invalid_key"
-            except RateLimit:
-                _LOGGER.exception("Rate limit exceeded.")
-                self._errors[CONF_NAME] = "rate_limit"
-            except UrlNotFound:
-                _LOGGER.exception("URL error communicating with Renogy.")
-                self._errors[CONF_NAME] = "api_error"
-            except Exception as ex:
-                _LOGGER.exception(
-                    "Error contacting Renogy API: %s",
-                    ex,
-                )
-                self._errors[CONF_NAME] = "general"
-
+            self._errors = await self._async_validate_cloud_input(user_input)
             if not self._errors:
                 data = {
                     **self._data,
@@ -239,32 +267,17 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self._errors = {}
 
         if user_input is not None:
-            mac_address = user_input.get(CONF_MAC_ADDRESS, "").strip().upper()
-
-            # Validation
-            is_valid = True
-            if len(mac_address) != 17 or mac_address[2] != ":" or mac_address[5] != ":":
-                is_valid = False
-            else:
-                try:
-                    int(mac_address.replace(":", ""), 16)
-                except ValueError:
-                    is_valid = False
-
-            if not is_valid:
-                self._errors[CONF_MAC_ADDRESS] = "invalid_mac"
-            else:
+            mac_address = self._validate_and_format_mac(
+                user_input.get(CONF_MAC_ADDRESS, "")
+            )
+            if mac_address is not None:
                 await self.async_set_unique_id(mac_address)
                 self._abort_if_unique_id_configured()
 
                 self._data.update(user_input)
                 self._data[CONF_MAC_ADDRESS] = mac_address
 
-                if not hasattr(self, "_detected_type"):
-                    (
-                        self._detected_type,
-                        self._detected_id,
-                    ) = await async_detect_device_type(self.hass, mac_address)
+                await self._async_ensure_detected_device(mac_address)
                 return await self.async_step_ble_step2()
 
         return self.async_show_form(
@@ -297,12 +310,7 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="ble_step2",
             data_schema=_get_ble_schema(
-                defaults={
-                    CONF_DEVICE_TYPE: getattr(self, "_detected_type", None)
-                    or "controller",
-                    CONF_DEVICE_ID: getattr(self, "_detected_id", None)
-                    or DEFAULT_DEVICE_ID,
-                },
+                defaults=self._get_detected_ble_defaults(),
                 show_mac=False,
                 mac_only=False,
             ),
@@ -330,33 +338,7 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     async def _reconfigure_cloud(self, user_input: dict[str, Any] | None = None):
         """Reconfigure cloud API settings."""
         if user_input is not None:
-            renogy = api(
-                secret_key=user_input[CONF_SECRET_KEY],
-                access_key=user_input[CONF_ACCESS_KEY],
-                session=async_get_clientsession(self.hass),
-            )
-            try:
-                await renogy.get_devices()
-            except NoDevices:
-                _LOGGER.exception("No devices found in API request.")
-                self._errors[CONF_ACCESS_KEY] = "no_devices"
-            except NotAuthorized:
-                _LOGGER.exception("Invalid key(s).")
-                self._errors[CONF_SECRET_KEY] = "invalid_key"
-                self._errors[CONF_ACCESS_KEY] = "invalid_key"
-            except RateLimit:
-                _LOGGER.exception("Rate limit exceeded.")
-                self._errors[CONF_NAME] = "rate_limit"
-            except UrlNotFound:
-                _LOGGER.exception("URL error communicating with Renogy.")
-                self._errors[CONF_NAME] = "api_error"
-            except Exception as ex:
-                _LOGGER.exception(
-                    "Error contacting Renogy API: %s",
-                    ex,
-                )
-                self._errors[CONF_NAME] = "general"
-
+            self._errors = await self._async_validate_cloud_input(user_input)
             if not self._errors:
                 _LOGGER.debug("%s reconfigured.", DOMAIN)
                 return self.async_update_reload_and_abort(
@@ -373,23 +355,16 @@ class RenogyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     async def _reconfigure_ble(self, user_input: dict[str, Any] | None = None):
         """Reconfigure BLE settings."""
         if user_input is not None:
-            mac_address = user_input.get(CONF_MAC_ADDRESS, "").strip().upper()
-
-            # Basic validation: 17 chars, correct separators
-            if len(mac_address) != 17 or mac_address[2] != ":" or mac_address[5] != ":":
-                self._errors[CONF_MAC_ADDRESS] = "invalid_mac"
-            else:
-                # Check for valid hex chars
-                try:
-                    int(mac_address.replace(":", ""), 16)
-                    user_input[CONF_MAC_ADDRESS] = mac_address
-                    _LOGGER.debug("%s BLE reconfigured.", DOMAIN)
-                    return self.async_update_reload_and_abort(
-                        self._entry,
-                        data_updates=user_input,
-                    )
-                except ValueError:
-                    self._errors[CONF_MAC_ADDRESS] = "invalid_mac"
+            mac_address = self._validate_and_format_mac(
+                user_input.get(CONF_MAC_ADDRESS, "")
+            )
+            if mac_address is not None:
+                user_input[CONF_MAC_ADDRESS] = mac_address
+                _LOGGER.debug("%s BLE reconfigured.", DOMAIN)
+                return self.async_update_reload_and_abort(
+                    self._entry,
+                    data_updates=user_input,
+                )
 
         return self.async_show_form(
             step_id="reconfigure",
@@ -448,27 +423,7 @@ def _get_ble_schema(
     """
     schema_dict: dict[vol.Marker, Any] = {}
 
-    if show_mac or mac_only or not defaults.get(CONF_MAC_ADDRESS):
-        # We always want the user to be able to set a Name,
-        # unless it's step 2 of manual flow
-        # Actually for step 2 of manual flow, we already have the name.
-        if not (
-            not show_mac and not mac_only and defaults.get(CONF_DEVICE_TYPE) is not None
-        ):
-            # Wait, auto-discovery calls with show_mac=False. It needs Name.
-            pass
-
-    # Simplified logic:
-    # Auto-discovery: show_mac=False, mac_only=False -> Needs Name, Type, ID
-    # Reconfigure: show_mac=True, mac_only=False -> Needs Name, MAC, Type, ID
-    # Manual Step 1: show_mac=True, mac_only=True -> Needs Name, MAC
-    # Manual Step 2: show_mac=False, mac_only=False -> Needs Type, ID
-
-    # Only exclude Name if we're in Step 2 of manual flow
-    # (which we identify by show_mac=False, mac_only=False,
-    # and it having the defaults for Type/ID but NO Name default passed in step 2)
-    has_name_default = CONF_NAME in defaults
-    if has_name_default:
+    if CONF_NAME in defaults:
         schema_dict[
             vol.Optional(CONF_NAME, default=defaults.get(CONF_NAME, DEFAULT_BLE_NAME))
         ] = cv.string

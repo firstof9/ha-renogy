@@ -29,6 +29,37 @@ class DeviceType(Enum):
 
 
 # ==========================================================================
+# Shared parsing helpers
+# ==========================================================================
+
+
+def _extract_bit_flags(value: int, bit_map: dict[int, str]) -> list[str]:
+    """Extract active flag names from a bitmask according to a bit-to-name map."""
+    return [name for bit, name in bit_map.items() if value & (1 << bit)]
+
+
+def _extract_2bit_alarms(
+    value: int,
+    entries: list[tuple[str, int]],
+    code_suffixes: dict[int, str],
+) -> list[str]:
+    """Extract alarms encoded as 2-bit fields at specified bit positions."""
+    alarms: list[str] = []
+    for prefix, bit_pos in entries:
+        code = (value >> bit_pos) & 0x03
+        if code in code_suffixes:
+            alarms.append(f"{prefix}_{code_suffixes[code]}")
+    return alarms
+
+
+def _parse_model_info(data: bytes, offset: int = 3) -> dict[str, Any]:
+    """Parse 16-byte ASCII model name from device info registers."""
+    if len(data) < offset + 16:
+        return {}
+    return {"model": bytes_to_ascii(data, offset, 16).strip("\x00")}
+
+
+# ==========================================================================
 # Controller constants and registers
 # ==========================================================================
 
@@ -67,11 +98,7 @@ CONTROLLER_REGISTERS = [
 
 def parse_controller_device_info(data: bytes, offset: int = 3) -> dict[str, Any]:
     """Parse controller device info (registers 12-19)."""
-    result: dict[str, Any] = {}
-    if len(data) < offset + 16:
-        return result
-    result["model"] = bytes_to_ascii(data, offset, 16).strip("\x00")
-    return result
+    return _parse_model_info(data, offset)
 
 
 def parse_controller_device_id(data: bytes, offset: int = 3) -> dict[str, Any]:
@@ -189,9 +216,7 @@ def parse_controller_faults(data: bytes, offset: int = 3) -> dict[str, Any]:
         _LOGGER.warning("Fault data too short: %s bytes", len(data))
         return result
 
-    high_word = bytes_to_int(data, offset, 2)
-    low_word = bytes_to_int(data, offset + 2, 2)
-    fault_bits = (high_word << 16) | low_word
+    fault_bits = bytes_to_int(data, offset, 4)
 
     fault_map = {
         30: "charge_mos_short_circuit",
@@ -210,9 +235,7 @@ def parse_controller_faults(data: bytes, offset: int = 3) -> dict[str, Any]:
         16: "battery_over_discharge",
     }
 
-    for bit, name in fault_map.items():
-        if fault_bits & (1 << bit):
-            result["faults"].append(name)
+    result["faults"] = _extract_bit_flags(fault_bits, fault_map)
 
     # Bit 18 is a warning, not a fault
     if fault_bits & (1 << 18):
@@ -234,29 +257,20 @@ def parse_controller_faults(data: bytes, offset: int = 3) -> dict[str, Any]:
 
 def parse_controller_historical(data: bytes, offset: int = 3) -> dict[str, Any]:
     """Parse controller historical data (7 days)."""
-    result: dict[str, Any] = {}
     if len(data) < offset + 42:
-        return result
+        return {}
 
-    daily_generation = []
-    for i in range(7):
-        val = bytes_to_int(data, offset + i * 2, 2)
-        daily_generation.append(val)
-    result["daily_power_generation"] = daily_generation
-
-    daily_charge_ah = []
-    for i in range(7):
-        val = bytes_to_int(data, offset + 14 + i * 2, 2)
-        daily_charge_ah.append(val)
-    result["daily_charge_ah"] = daily_charge_ah
-
-    daily_max_power = []
-    for i in range(7):
-        val = bytes_to_int(data, offset + 28 + i * 2, 2)
-        daily_max_power.append(val)
-    result["daily_max_power"] = daily_max_power
-
-    return result
+    return {
+        "daily_power_generation": [
+            bytes_to_int(data, offset + i * 2, 2) for i in range(7)
+        ],
+        "daily_charge_ah": [
+            bytes_to_int(data, offset + 14 + i * 2, 2) for i in range(7)
+        ],
+        "daily_max_power": [
+            bytes_to_int(data, offset + 28 + i * 2, 2) for i in range(7)
+        ],
+    }
 
 
 # ==========================================================================
@@ -355,26 +369,21 @@ def parse_battery_alarm_info(data: bytes, offset: int = 3) -> dict[str, Any]:
         return result
 
     # Registers 5100-5101: Cell Voltage Alarm Info
+    cell_entries = [(f"cell_{cell + 1}", cell * 2) for cell in range(16)]
     cell_voltage_alarm = bytes_to_int(data, offset, 4)
-    for cell in range(16):
-        alarm_code = (cell_voltage_alarm >> (cell * 2)) & 0x03
-        if alarm_code == 1:
-            result["cell_voltage_alarms"].append(f"cell_{cell + 1}_undervoltage")
-        elif alarm_code == 2:
-            result["cell_voltage_alarms"].append(f"cell_{cell + 1}_overvoltage")
-        elif alarm_code == 3:
-            result["cell_voltage_alarms"].append(f"cell_{cell + 1}_alarm")
+    result["cell_voltage_alarms"] = _extract_2bit_alarms(
+        cell_voltage_alarm,
+        cell_entries,
+        {1: "undervoltage", 2: "overvoltage", 3: "alarm"},
+    )
 
     # Registers 5102-5103: Cell Temperature Alarm Info
     cell_temp_alarm = bytes_to_int(data, offset + 4, 4)
-    for cell in range(16):
-        alarm_code = (cell_temp_alarm >> (cell * 2)) & 0x03
-        if alarm_code == 1:
-            result["cell_temperature_alarms"].append(f"cell_{cell + 1}_undertemp")
-        elif alarm_code == 2:
-            result["cell_temperature_alarms"].append(f"cell_{cell + 1}_overtemp")
-        elif alarm_code == 3:
-            result["cell_temperature_alarms"].append(f"cell_{cell + 1}_temp_alarm")
+    result["cell_temperature_alarms"] = _extract_2bit_alarms(
+        cell_temp_alarm,
+        cell_entries,
+        {1: "undertemp", 2: "overtemp", 3: "temp_alarm"},
+    )
 
     # Registers 5104-5105: Other Alarm Info
     other_alarm = bytes_to_int(data, offset + 8, 4)
@@ -394,14 +403,13 @@ def parse_battery_alarm_info(data: bytes, offset: int = 3) -> dict[str, Any]:
         ("discharge_current", 24),
         ("discharge_current", 26),
     ]
-    for name, bit_pos in alarm_names:
-        alarm_code = (other_alarm >> bit_pos) & 0x03
-        if alarm_code == 1:
-            result["protection_alarms"].append(f"{name}_low")
-        elif alarm_code == 2:
-            result["protection_alarms"].append(f"{name}_high")
-        elif alarm_code == 3:
-            result["protection_alarms"].append(f"{name}_alarm")
+    result["protection_alarms"].extend(
+        _extract_2bit_alarms(
+            other_alarm,
+            alarm_names,
+            {1: "low", 2: "high", 3: "alarm"},
+        )
+    )
 
     # Register 5106: Status1
     status1 = bytes_to_int(data, offset + 12, 2)
@@ -420,9 +428,7 @@ def parse_battery_alarm_info(data: bytes, offset: int = 3) -> dict[str, Any]:
         4: "charge_overcurrent2",
         0: "short_circuit",
     }
-    for bit, name in status1_faults.items():
-        if status1 & (1 << bit):
-            result["protection_alarms"].append(name)
+    result["protection_alarms"].extend(_extract_bit_flags(status1, status1_faults))
 
     result["using_battery_power"] = bool(status1 & (1 << 3))
     result["discharge_mosfet"] = "on" if status1 & (1 << 2) else "off"
@@ -447,14 +453,9 @@ def parse_battery_alarm_info(data: bytes, offset: int = 3) -> dict[str, Any]:
         2: "module_low_voltage",
         1: "cell_high_voltage",
         0: "cell_low_voltage",
+        **{8 + i: f"cell_{11 + i}_voltage_error" for i in range(8)},
     }
-    for bit, name in warning_map_low.items():
-        if status3 & (1 << bit):
-            result["warnings"].append(name)
-
-    for i in range(8):
-        if status3 & (1 << (8 + i)):
-            result["warnings"].append(f"cell_{11 + i}_voltage_error")
+    result["warnings"] = _extract_bit_flags(status3, warning_map_low)
 
     # Register 5109: Charge/Discharge Status
     status4 = bytes_to_int(data, offset + 18, 2)
@@ -478,11 +479,7 @@ def parse_battery_alarm_info(data: bytes, offset: int = 3) -> dict[str, Any]:
 
 def parse_battery_device_info(data: bytes, offset: int = 3) -> dict[str, Any]:
     """Parse battery device info (registers 5122-5129)."""
-    result: dict[str, Any] = {}
-    if len(data) < offset + 16:
-        return result
-    result["model"] = bytes_to_ascii(data, offset, 16).strip("\x00")
-    return result
+    return _parse_model_info(data, offset)
 
 
 # ==========================================================================
@@ -562,8 +559,6 @@ def parse_inverter_main_status(data: bytes, offset: int = 3) -> dict[str, Any]:
         status_high = bytes_to_int(data, offset + 14, 2)
         status_low = bytes_to_int(data, offset + 16, 2)
 
-        result["faults"] = []
-
         high_faults = {
             15: "input_uvp",
             14: "input_ovp",
@@ -577,12 +572,6 @@ def parse_inverter_main_status(data: bytes, offset: int = 3) -> dict[str, Any]:
             6: "output_uvp",
             5: "output_ovp",
         }
-        for bit, name in high_faults.items():
-            if status_high & (1 << bit):
-                result["faults"].append(name)
-
-        result["eco_mode"] = bool(status_high & (1 << 4))
-
         low_faults = {
             15: "utility_fail",
             14: "battery_low",
@@ -594,9 +583,10 @@ def parse_inverter_main_status(data: bytes, offset: int = 3) -> dict[str, Any]:
             5: "inverter_short_circuit",
             4: "battery_bad",
         }
-        for bit, name in low_faults.items():
-            if status_low & (1 << bit):
-                result["faults"].append(name)
+        result["faults"] = _extract_bit_flags(
+            status_high, high_faults
+        ) + _extract_bit_flags(status_low, low_faults)
+        result["eco_mode"] = bool(status_high & (1 << 4))
 
         result["ups_line_interactive"] = bool(status_low & (1 << 11))
         result["test_in_progress"] = bool(status_low & (1 << 10))

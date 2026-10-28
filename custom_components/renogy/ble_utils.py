@@ -256,12 +256,17 @@ def format_mac_address(mac: str) -> str:
     Returns:
         Normalized MAC address string.
     """
-    mac = mac.replace("-", "").replace(":", "").replace(" ", "").upper()
+    cleaned = mac.replace("-", "").replace(":", "").replace(" ", "").upper()
 
-    if len(mac) != 12:
+    if len(cleaned) != 12:
         raise ValueError(f"Invalid MAC address: {mac}")
 
-    return ":".join(mac[i : i + 2] for i in range(0, 12, 2))
+    try:
+        int(cleaned, 16)
+    except ValueError as err:
+        raise ValueError(f"Invalid MAC address: {mac}") from err
+
+    return ":".join(cleaned[i : i + 2] for i in range(0, 12, 2))
 
 
 def _obfuscate_mac(mac: str) -> str:
