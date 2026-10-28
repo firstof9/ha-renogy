@@ -1,6 +1,9 @@
 {
     "domain": "renogy",
     "name": "Renogy",
+    "categories": [
+        "energy.solar_batteries"
+    ],
     "after_dependencies": [
         "bluetooth",
         "bluetooth_adapters"
