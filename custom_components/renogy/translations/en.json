@@ -35,6 +35,14 @@
         "description": "Enter your Renogy BT module's MAC address. You can find this in the Renogy app or by scanning for BLE devices with names starting with 'BT-TH'.",
         "title": "Bluetooth Setup"
       },
+      "ble_step2": {
+        "data": {
+          "device_type": "Device Type",
+          "device_id": "Device ID (Modbus)"
+        },
+        "description": "Select the Renogy device type and Modbus device ID.",
+        "title": "Bluetooth Device Settings"
+      },
       "bluetooth_confirm": {
         "data": {
           "name": "Device Name",

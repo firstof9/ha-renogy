@@ -9,9 +9,15 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceEntry
 
-from .const import CONF_ACCESS_KEY, CONF_SECRET_KEY, COORDINATOR, DOMAIN
+from .const import (
+    CONF_ACCESS_KEY,
+    CONF_MAC_ADDRESS,
+    CONF_SECRET_KEY,
+    COORDINATOR,
+    DOMAIN,
+)
 
-REDACT_KEYS = {CONF_ACCESS_KEY, CONF_SECRET_KEY}
+REDACT_KEYS = {CONF_ACCESS_KEY, CONF_MAC_ADDRESS, CONF_SECRET_KEY, "mac", "serial"}
 
 
 async def async_get_config_entry_diagnostics(  # pylint: disable-next=unused-argument
@@ -28,4 +34,4 @@ async def async_get_device_diagnostics(  # pylint: disable-next=unused-argument
 ) -> dict[str, Any]:
     """Return diagnostics for a device."""
     coordinator = hass.data[DOMAIN][config_entry.entry_id][COORDINATOR]
-    return coordinator.data
+    return async_redact_data(coordinator.data, REDACT_KEYS)
