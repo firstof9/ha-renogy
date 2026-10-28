@@ -385,10 +385,22 @@ async def test_async_remove_config_entry_device_integration(
         initial_device_count = len(devices)
         assert initial_device_count > 0
 
-        # Test with actual config entry (should not have runtime_data in this context)
+        # Test with actual config entry (devices are present in coordinator data)
         for device in devices:
             result = await async_remove_config_entry_device(hass, entry, device)
-            # Should return True because entry doesn't have runtime_data
+            # Should return False because devices exist in runtime_data
+            assert result is False
+
+        # When coordinator data is empty, get_device returns None -> returns True
+        entry.runtime_data.coordinator.data = {}
+        for device in devices:
+            result = await async_remove_config_entry_device(hass, entry, device)
+            assert result is True
+
+        # When coordinator data is None, get_device returns None -> returns True
+        entry.runtime_data.coordinator.data = None
+        for device in devices:
+            result = await async_remove_config_entry_device(hass, entry, device)
             assert result is True
 
 
@@ -428,7 +440,7 @@ async def test_setup_ble_success(hass):
         await hass.async_block_till_done()
 
         assert entry.state == config_entries.ConfigEntryState.LOADED
-        assert hass.data[DOMAIN][entry.entry_id] is not None
+        assert entry.runtime_data is not None
 
         await hass.config_entries.async_unload(entry.entry_id)
         await hass.async_block_till_done()
@@ -641,8 +653,6 @@ async def test_cloud_setup_with_custom_scan_interval_and_reload(hass, mock_api):
 
     from homeassistant.const import CONF_SCAN_INTERVAL
 
-    from custom_components.renogy.const import COORDINATOR
-
     entry = MockConfigEntry(
         domain=DOMAIN,
         title=DEVICE_NAME,
@@ -654,14 +664,14 @@ async def test_cloud_setup_with_custom_scan_interval_and_reload(hass, mock_api):
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
-    coordinator = hass.data[DOMAIN][entry.entry_id][COORDINATOR]
+    coordinator = entry.runtime_data.coordinator
     assert coordinator.update_interval == timedelta(seconds=120)
 
     # Updating options triggers update listeners -> async_reload_entry -> async_reload
     hass.config_entries.async_update_entry(entry, options={CONF_SCAN_INTERVAL: 90})
     await hass.async_block_till_done()
 
-    coordinator_reloaded = hass.data[DOMAIN][entry.entry_id][COORDINATOR]
+    coordinator_reloaded = entry.runtime_data.coordinator
     assert coordinator_reloaded.update_interval == timedelta(seconds=90)
 
 
@@ -670,8 +680,6 @@ async def test_ble_setup_with_custom_scan_interval_and_reload(hass):
     from datetime import timedelta
 
     from homeassistant.const import CONF_SCAN_INTERVAL
-
-    from custom_components.renogy.const import COORDINATOR
 
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -704,12 +712,12 @@ async def test_ble_setup_with_custom_scan_interval_and_reload(hass):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-        coordinator = hass.data[DOMAIN][entry.entry_id][COORDINATOR]
+        coordinator = entry.runtime_data.coordinator
         assert coordinator.update_interval == timedelta(seconds=120)
 
         # Updating options triggers update listeners -> async_reload_entry -> async_reload
         hass.config_entries.async_update_entry(entry, options={CONF_SCAN_INTERVAL: 90})
         await hass.async_block_till_done()
 
-        coordinator_reloaded = hass.data[DOMAIN][entry.entry_id][COORDINATOR]
+        coordinator_reloaded = entry.runtime_data.coordinator
         assert coordinator_reloaded.update_interval == timedelta(seconds=90)

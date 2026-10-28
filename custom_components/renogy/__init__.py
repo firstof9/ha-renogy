@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from dataclasses import dataclass
 from datetime import timedelta
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_SCAN_INTERVAL
@@ -26,17 +28,32 @@ from .const import (
     CONF_NAME,
     CONF_SECRET_KEY,
     CONNECTION_TYPE_BLE,
-    COORDINATOR,
     DEFAULT_DEVICE_ID,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     ISSUE_URL,
-    MANAGER,
     PLATFORMS,
     VERSION,
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+@dataclass
+class RenogyRuntimeData:
+    """Runtime data for a Renogy config entry."""
+
+    coordinator: RenogyUpdateCoordinator | BLEUpdateCoordinator
+    manager: Any
+
+    def get_device(self, device_id: str) -> dict[str, Any] | None:
+        """Return device data from the coordinator if present."""
+        if not isinstance(self.coordinator.data, dict):
+            return None
+        return self.coordinator.data.get(device_id)
+
+
+type RenogyConfigEntry = ConfigEntry[RenogyRuntimeData]
 
 
 async def async_setup(  # pylint: disable-next=unused-argument
@@ -46,9 +63,10 @@ async def async_setup(  # pylint: disable-next=unused-argument
     return True
 
 
-async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
+async def async_setup_entry(
+    hass: HomeAssistant, config_entry: RenogyConfigEntry
+) -> bool:
     """Set up is called when Home Assistant is loading our component."""
-    hass.data.setdefault(DOMAIN, {})
     _LOGGER.info(
         "Version %s is starting, if you have any issues please report them here: %s",
         VERSION,
@@ -68,7 +86,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
 
 
 async def _async_setup_cloud_entry(
-    hass: HomeAssistant, config_entry: ConfigEntry
+    hass: HomeAssistant, config_entry: RenogyConfigEntry
 ) -> bool:
     """Set up cloud API integration."""
     manager = RenogyManager(hass, config_entry).api
@@ -80,10 +98,10 @@ async def _async_setup_cloud_entry(
     if not coordinator.last_update_success:
         raise ConfigEntryNotReady
 
-    hass.data[DOMAIN][config_entry.entry_id] = {
-        COORDINATOR: coordinator,
-        MANAGER: manager,
-    }
+    config_entry.runtime_data = RenogyRuntimeData(
+        coordinator=coordinator,
+        manager=manager,
+    )
 
     _register_cloud_devices(hass, config_entry, coordinator)
 
@@ -142,7 +160,7 @@ def _register_cloud_devices(
 
 
 async def _async_setup_ble_entry(
-    hass: HomeAssistant, config_entry: ConfigEntry
+    hass: HomeAssistant, config_entry: RenogyConfigEntry
 ) -> bool:
     """Set up BLE integration."""
     from .ble_client import BLEDeviceManager, DeviceConfig
@@ -164,25 +182,21 @@ async def _async_setup_ble_entry(
     interval = config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
     coordinator = BLEUpdateCoordinator(hass, interval, config_entry, ble_manager)
 
-    # Store in hass.data immediately so async_unload_entry can clean up
-    # even if the initial refresh fails mid-way through platform setup.
-    hass.data[DOMAIN][config_entry.entry_id] = {
-        COORDINATOR: coordinator,
-        MANAGER: ble_manager,
-    }
-
     try:
         await coordinator.async_refresh()
     except Exception as err:
         # Disconnect BLEDeviceManager to avoid leaked connections
         await ble_manager.disconnect_all()
-        hass.data[DOMAIN].pop(config_entry.entry_id, None)
         raise ConfigEntryNotReady(f"BLE initial refresh failed: {err}") from err
 
     if not coordinator.last_update_success:
         await ble_manager.disconnect_all()
-        hass.data[DOMAIN].pop(config_entry.entry_id, None)
         raise ConfigEntryNotReady("BLE coordinator refresh was unsuccessful")
+
+    config_entry.runtime_data = RenogyRuntimeData(
+        coordinator=coordinator,
+        manager=ble_manager,
+    )
 
     # Register BLE device in device registry
     device_registry = dr.async_get(hass)
@@ -208,10 +222,10 @@ async def _async_setup_ble_entry(
 
 
 async def async_remove_config_entry_device(  # pylint: disable-next=unused-argument
-    hass: HomeAssistant, config_entry: ConfigEntry, device_entry: dr.DeviceEntry
+    hass: HomeAssistant, config_entry: RenogyConfigEntry, device_entry: dr.DeviceEntry
 ) -> bool:
     """Remove config entry from a device if its no longer present."""
-    if not hasattr(config_entry, "runtime_data"):
+    if not hasattr(config_entry, "runtime_data") or config_entry.runtime_data is None:
         return True
     return not any(
         identifier
@@ -221,7 +235,9 @@ async def async_remove_config_entry_device(  # pylint: disable-next=unused-argum
     )
 
 
-async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
+async def async_unload_entry(
+    hass: HomeAssistant, config_entry: RenogyConfigEntry
+) -> bool:
     """Handle removal of an entry."""
     _LOGGER.debug("Attempting to unload entities from the %s integration", DOMAIN)
 
@@ -238,12 +254,11 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
         _LOGGER.debug("Successfully removed entities from the %s integration", DOMAIN)
 
         # Disconnect BLE if applicable
-        entry_data = hass.data[DOMAIN].get(config_entry.entry_id, {})
-        manager = entry_data.get(MANAGER)
-        if hasattr(manager, "disconnect_all"):
-            await manager.disconnect_all()
-
-        hass.data[DOMAIN].pop(config_entry.entry_id, None)
+        if hasattr(config_entry, "runtime_data") and config_entry.runtime_data:
+            manager = config_entry.runtime_data.manager
+            if hasattr(manager, "disconnect_all"):
+                await manager.disconnect_all()
+            config_entry.runtime_data = None  # type: ignore[assignment]
 
     return unload_ok
 
